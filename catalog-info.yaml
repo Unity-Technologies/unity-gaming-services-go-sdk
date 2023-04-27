@@ -1,0 +1,17 @@
+# For more information about the available options please visit: http://go/backstage (VPN required)
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    github.com/project-slug: Unity-Technologies/unity-gaming-services-go-sdk
+    backstage.io/techdocs-ref: dir:.
+  name: unity-gaming-services-go-sdk
+  description: "Golang SDK for Unity Gaming Services: https://unity.com/solutions/gaming-services"
+  labels:
+    costcenter: "5111"
+  tags:
+    - planned-public
+spec:
+  type: library
+  lifecycle: production
+  owner: unity-technologies/multiplayer-services
