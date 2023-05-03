@@ -1,5 +1,8 @@
 # unity-gaming-services-go-sdk
-[View this project in Backstage](https://backstage.corp.unity3d.com/catalog/default/component/unity-gaming-services-go-sdk) <br/>
-# Converting to public repository
-Any and all Unity software of any description (including components) (1) whose source is to be made available other than under a Unity source code license or (2) in respect of which a public announcement is to be made concerning its inner workings, may be licensed and released only upon the prior approval of Legal.
-The process for that is to access, complete, and submit this [FORM](https://docs.google.com/forms/d/e/1FAIpQLSe3H6PARLPIkWVjdB_zMvuIuIVtrqNiGlEt1yshkMCmCMirvA/viewform).
+
+[Unity Gaming Services](https://unity.com/solutions/gaming-services) solves the developer challenges of building live games with tools for multiplayer solutions, game operations, user acquisition, and monetization. This repository is a Golang SDK / library for interacting with the following services:
+
+- [Game Server Hosting](https://unity.com/products/game-server-hosting): integrate your game server quickly using the `server` library. Example usage can be found [here](https://github.com/Unity-Technologies/multiplay-examples/tree/main/simple-game-server-go).
+
+---
+_Disclaimer: The repo owners will not (cannot) accept pull requests, GitHub review requests, or any other GitHub-hosted issue management requests._
