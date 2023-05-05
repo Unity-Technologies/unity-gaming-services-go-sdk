@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"fmt"
-
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/a2s"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 )
@@ -58,7 +57,14 @@ func (s *Server) restartQueryEndpoint(c Config) error {
 	}
 
 	var err error
-	if s.queryBind, err = newUDPBinding(fmt.Sprintf(":%s", c.QueryPort)); err != nil {
+	s.queryBind, err = newUDPBinding(
+		fmt.Sprintf(":%s", c.QueryPort),
+		s.queryReadBufferSizeBytes,
+		s.queryWriteBufferSizeBytes,
+		s.queryWriteDeadlineDuration,
+	)
+
+	if err != nil {
 		return err
 	}
 

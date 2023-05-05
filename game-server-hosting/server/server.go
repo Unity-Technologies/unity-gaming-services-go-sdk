@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 )
@@ -51,6 +52,11 @@ type (
 		chanDeallocated          chan Config
 		chanError                chan error
 
+		// Query-related configuration
+		queryWriteBufferSizeBytes  int
+		queryWriteDeadlineDuration time.Duration
+		queryReadBufferSizeBytes   int
+
 		// Synchronisation
 		done chan struct{}
 		wg   sync.WaitGroup
@@ -63,13 +69,27 @@ const (
 
 	// TypeReservation represents a server which is using the 'reservations' model of server usage.
 	TypeReservation = Type(1)
+
+	// DefaultWriteBufferSizeBytes represents the default size of the write buffer for the query handler.
+	DefaultWriteBufferSizeBytes = 1024
+
+	// DefaultWriteDeadlineDuration represents the default write deadline duration for responding in the query handler.
+	DefaultWriteDeadlineDuration = 1 * time.Second
+
+	// DefaultReadBufferSizeBytes represents the default size of the read buffer for the query handler.
+	DefaultReadBufferSizeBytes = 1024
+)
+
+var (
+	// ErrReservationsNotYetSupported represents that a reservation-based server is not yet supported by the SDK.
+	ErrReservationsNotYetSupported = errors.New("reservations are not yet supported")
 )
 
 // New creates a new instance of Server, denoting which type of server to use.
-func New(serverType Type) (*Server, error) {
+func New(serverType Type, opts ...Option) (*Server, error) {
 	// Reservations are not supported just yet, but provided to make the API stable.
 	if serverType == TypeReservation {
-		return nil, errors.New("reservations are not supported yet")
+		return nil, ErrReservationsNotYetSupported
 	}
 
 	dir, err := os.UserHomeDir()
@@ -77,7 +97,7 @@ func New(serverType Type) (*Server, error) {
 		return nil, fmt.Errorf("error getting user home directory: %w", err)
 	}
 
-	return &Server{
+	s := &Server{
 		serverType:                  serverType,
 		cfgFile:                     filepath.Join(dir, "server.json"),
 		chanAllocated:               make(chan Config, 1),
@@ -86,7 +106,17 @@ func New(serverType Type) (*Server, error) {
 		chanConfigurationChanged:    make(chan Config, 1),
 		internalEventProcessorReady: make(chan struct{}, 1),
 		done:                        make(chan struct{}, 1),
-	}, nil
+		queryWriteBufferSizeBytes:   DefaultWriteBufferSizeBytes,
+		queryWriteDeadlineDuration:  DefaultWriteDeadlineDuration,
+		queryReadBufferSizeBytes:    DefaultReadBufferSizeBytes,
+	}
+
+	// Apply any specified options.
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s, nil
 }
 
 // Start starts the server, opening the configured query port which responds with the configured protocol.

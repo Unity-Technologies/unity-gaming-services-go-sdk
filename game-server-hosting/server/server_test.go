@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 	"github.com/stretchr/testify/require"
@@ -170,4 +171,47 @@ func Test_DataSettings(t *testing.T) {
 		GameType:   "type",
 		Map:        "map",
 	}, s.state)
+}
+
+func Test_New_noReservations(t *testing.T) {
+	t.Parallel()
+
+	s, err := New(TypeReservation)
+	require.Nil(t, s)
+	require.ErrorIs(t, err, ErrReservationsNotYetSupported)
+}
+
+func Test_New_appliesOptions(t *testing.T) {
+	t.Parallel()
+
+	s, err := New(
+		TypeAllocation,
+		WithQueryWriteDeadlineDuration(2*time.Second),
+		WithQueryWriteBuffer(1),
+		WithQueryReadBuffer(2),
+	)
+	require.NoError(t, err)
+	require.Equal(t, 2*time.Second, s.queryWriteDeadlineDuration)
+	require.Equal(t, 1, s.queryWriteBufferSizeBytes)
+	require.Equal(t, 2, s.queryReadBufferSizeBytes)
+}
+
+func Test_New_Allocations(t *testing.T) {
+	t.Parallel()
+
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+
+	s, err := New(TypeAllocation)
+	require.NoError(t, err)
+	require.Equal(t, TypeAllocation, s.serverType)
+	require.Equal(t, filepath.Join(home, "server.json"), s.cfgFile)
+	require.NotNil(t, s.chanAllocated)
+	require.NotNil(t, s.chanDeallocated)
+	require.NotNil(t, s.chanError)
+	require.NotNil(t, s.chanConfigurationChanged)
+	require.NotNil(t, s.done)
+	require.Equal(t, DefaultWriteBufferSizeBytes, s.queryWriteBufferSizeBytes)
+	require.Equal(t, DefaultReadBufferSizeBytes, s.queryReadBufferSizeBytes)
+	require.Equal(t, DefaultWriteDeadlineDuration, s.queryWriteDeadlineDuration)
 }

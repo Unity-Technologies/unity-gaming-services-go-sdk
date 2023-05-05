@@ -8,8 +8,6 @@ import (
 	"strconv"
 )
 
-/*
- */
 type (
 	// Config represents the game server configuration variables provided from the Unity Game Server Hosting platform.
 	Config struct {
@@ -105,7 +103,7 @@ func newConfigFromFile(configFile string) (*Config, error) {
 	return cfg, nil
 }
 
-// BackfillEnabled .
+// BackfillEnabled returns a boolean representation of the `enableBackfill` configuration item.
 func (c Config) BackfillEnabled() bool {
 	b, _ := strconv.ParseBool(c.EnableBackfillStr)
 	return b

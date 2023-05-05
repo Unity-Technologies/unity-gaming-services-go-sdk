@@ -10,13 +10,14 @@ import (
 type (
 	// udpBinding is a managed wrapper for a generic UDP listener.
 	udpBinding struct {
-		conn *net.UDPConn
-		done chan struct{}
+		conn                  *net.UDPConn
+		done                  chan struct{}
+		writeDeadlineDuration time.Duration
 	}
 )
 
 // newUDPBinding creates a new UDP binding on the specified address.
-func newUDPBinding(bindAddress string) (*udpBinding, error) {
+func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeBytes int, writeDeadlineDuration time.Duration) (*udpBinding, error) {
 	address, err := net.ResolveUDPAddr("udp4", bindAddress)
 	if err != nil {
 		return nil, err
@@ -27,9 +28,18 @@ func newUDPBinding(bindAddress string) (*udpBinding, error) {
 		return nil, err
 	}
 
+	if err = conn.SetReadBuffer(readBufferSizeBytes); err != nil {
+		return nil, fmt.Errorf("error setting read buffer: %w", err)
+	}
+
+	if err = conn.SetWriteBuffer(writeBufferSizeBytes); err != nil {
+		return nil, fmt.Errorf("error setting write buffer: %w", err)
+	}
+
 	return &udpBinding{
-		conn: conn,
-		done: make(chan struct{}),
+		conn:                  conn,
+		done:                  make(chan struct{}),
+		writeDeadlineDuration: writeDeadlineDuration,
 	}, nil
 }
 
@@ -48,7 +58,7 @@ func (b *udpBinding) Write(buf []byte, to *net.UDPAddr) (int, error) {
 		return 0, errors.New("binding is closed")
 	}
 
-	if err := b.conn.SetWriteDeadline(time.Now().Add(1 * time.Second)); err != nil {
+	if err := b.conn.SetWriteDeadline(time.Now().Add(b.writeDeadlineDuration)); err != nil {
 		return 0, fmt.Errorf("error setting write deadline: %w", err)
 	}
 
