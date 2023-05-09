@@ -16,14 +16,14 @@ func main() {
 	if err != nil {
 		// ...
 	}
-
-	if err = s.Start(); err != nil {
-		// ...
-	}
-
+	
 	// Handle server events (i.e. allocation, deallocation, errors)
 	done := make(chan struct{})
 	go handleEvents(s, done)
+	
+	if err = s.Start(); err != nil {
+		// ...
+	}
 
 	if err = s.WaitUntilTerminated(); err != nil {
 		close(done)

@@ -62,6 +62,11 @@ func (s *Server) wrapWithConfigAndJWT(f backfillWrapFunc) (*BackfillTicket, erro
 // approveBackfillTicket calls the matchmaker backfill approval endpoint to update and keep the backfill ticket alive.
 // Documentation: https://services.docs.unity.com/matchmaker/v2/index.html#tag/Backfill/operation/approveBackfillTicket
 func (s *Server) approveBackfillTicket(c *gsh.Config, token string) (*BackfillTicket, error) {
+	// Don't attempt to approve the ticket if the server is not allocated.
+	if c.AllocatedUUID == "" {
+		return nil, ErrNotAllocated
+	}
+
 	backfillApprovalURL := fmt.Sprintf(
 		"%s/v2/backfill/%s/approvals",
 		matchmakerURL(*c),

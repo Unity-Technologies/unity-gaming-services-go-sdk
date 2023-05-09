@@ -41,8 +41,10 @@ func New(serverType gsh.Type, opts ...gsh.Option) (*Server, error) {
 
 // Start starts the server, opening the configured query port which responds with the configured protocol.
 // The event loop will also listen for changes to the `server.json` configuration file, publishing any
-// changes in the form of allocation or de-allocation messages. The server will also listen for changes to the backfill
-// state in Matchmaker and propagate those changes to a consumer.
+// changes in the form of allocation or de-allocation messages. The server will also keep any backfill state alive
+// on the allocation ID the server is using.
+// As the server can start in an allocated state, make sure that another goroutine is consuming messages from at least
+// the `OnAllocated()` channel before calling this method.
 func (s *Server) Start() error {
 	if err := s.Server.Start(); err != nil {
 		return err

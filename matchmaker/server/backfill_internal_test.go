@@ -53,7 +53,11 @@ func Test_approveBackfillTicket(t *testing.T) {
 	g, err := New(gsh.TypeAllocation)
 	require.NoError(t, err)
 
-	ticket, err := g.approveBackfillTicket(&gsh.Config{
+	ticket, err := g.approveBackfillTicket(&gsh.Config{}, "token")
+	require.Nil(t, ticket)
+	require.ErrorIs(t, err, ErrNotAllocated)
+
+	ticket, err = g.approveBackfillTicket(&gsh.Config{
 		AllocatedUUID: "77c31f84-b890-48e8-be08-5db9a551bba3",
 		LocalProxyURL: proxy.URL,
 		Extra: map[string]string{

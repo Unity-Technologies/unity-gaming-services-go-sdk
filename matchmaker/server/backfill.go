@@ -26,4 +26,7 @@ type (
 var (
 	// ErrBackfillApprove is an error which denotes that backfill approval process has failed.
 	ErrBackfillApprove = errors.New("failed to approve backfill ticket")
+
+	// ErrNotAllocated is an error which denotes the action cannot be performed as the server is not yet allocated.
+	ErrNotAllocated = errors.New("server is not allocated")
 )

@@ -121,6 +121,8 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 // Start starts the server, opening the configured query port which responds with the configured protocol.
 // The event loop will also listen for changes to the `server.json` configuration file, publishing any
 // changes in the form of allocation or de-allocation messages.
+// As the server can start in an allocated state, make sure that another goroutine is consuming messages from at least
+// the `OnAllocated()` channel before calling this method.
 func (s *Server) Start() error {
 	c, err := newConfigFromFile(s.cfgFile)
 	if err != nil {
@@ -143,7 +145,13 @@ func (s *Server) Start() error {
 
 	// Handle the app starting with an allocation
 	if c.AllocatedUUID != "" {
-		s.chanConfigurationChanged <- *c
+		// Configuration has changed - propagate to consumer. This is optional, so make sure we don't deadlock if
+		// nobody is listening.
+		select {
+		case s.chanConfigurationChanged <- *c:
+		default:
+		}
+
 		s.chanAllocated <- c.AllocatedUUID
 	}
 
