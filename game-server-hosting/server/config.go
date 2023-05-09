@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strconv"
 )
 
 type (
@@ -13,9 +12,6 @@ type (
 	Config struct {
 		// AllocatedUUID is the allocation ID provided to an event.
 		AllocatedUUID string `json:"allocatedUUID"`
-
-		// EnableBackfillStr is the string representation of whether the backfill feature in Unity Matchmaker is enabled.
-		EnableBackfillStr string `json:"enableBackfill"`
 
 		// IP is the IPv4 address of this server.
 		IP string `json:"ip"`
@@ -25,9 +21,6 @@ type (
 
 		// LocalProxyURL is the URL to the local proxy service, which can handle interactions with the allocations payload store.
 		LocalProxyURL string `json:"localProxyUrl"`
-
-		// MatchmakerURL is the URL to the matchmaker service this server is using.
-		MatchmakerURL string `json:"matchmakerUrl"`
 
 		// Port is the port number this server uses for game interactions. It is up to the implemented to bind their game
 		// server to this port.
@@ -82,18 +75,9 @@ func newConfigFromFile(configFile string) (*Config, error) {
 		delete(cfg.Extra, v.Field(i).Tag.Get("json"))
 	}
 
-	// Set query type to 'sqp' if one is not defined.
+	// Set query type to the recommended protocol if one is not defined.
 	if cfg.QueryType == "" {
-		cfg.QueryType = QueryProtocolSQP
-	}
-
-	// Set backfill to default value if one is not defined.
-	if cfg.EnableBackfillStr == "" {
-		cfg.EnableBackfillStr = "false"
-	}
-
-	if cfg.MatchmakerURL == "" {
-		cfg.MatchmakerURL = "https://matchmaker.services.api.unity.com"
+		cfg.QueryType = QueryProtocolRecommended
 	}
 
 	if cfg.LocalProxyURL == "" {
@@ -101,10 +85,4 @@ func newConfigFromFile(configFile string) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// BackfillEnabled returns a boolean representation of the `enableBackfill` configuration item.
-func (c Config) BackfillEnabled() bool {
-	b, _ := strconv.ParseBool(c.EnableBackfillStr)
-	return b
 }

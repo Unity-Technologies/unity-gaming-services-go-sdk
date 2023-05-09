@@ -27,3 +27,11 @@ func WithQueryWriteDeadlineDuration(duration time.Duration) Option {
 		s.queryWriteDeadlineDuration = duration
 	}
 }
+
+// WithConfigPath sets the configuration file to use when starting the server. In most circumstances, the default
+// value is reasonable to use.
+func WithConfigPath(path string) Option {
+	return func(s *Server) {
+		s.cfgFile = path
+	}
+}

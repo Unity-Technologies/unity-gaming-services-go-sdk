@@ -75,33 +75,27 @@ func Test_StartStopQuery(t *testing.T) {
 func Test_OnAllocate(t *testing.T) {
 	t.Parallel()
 
-	c := Config{
-		AllocatedUUID: "a-uuid",
-	}
 	s, err := New(TypeAllocation)
 	require.NoError(t, err)
 
 	go func() {
-		s.chanAllocated <- c
+		s.chanAllocated <- "a-uuid"
 	}()
 
-	require.Equal(t, c, <-s.OnAllocate())
+	require.Equal(t, "a-uuid", <-s.OnAllocate())
 }
 
 func Test_OnDeallocate(t *testing.T) {
 	t.Parallel()
 
-	c := Config{
-		AllocatedUUID: "a-uuid",
-	}
 	s, err := New(TypeAllocation)
 	require.NoError(t, err)
 
 	go func() {
-		s.chanDeallocated <- c
+		s.chanDeallocated <- ""
 	}()
 
-	require.Equal(t, c, <-s.OnDeallocate())
+	require.Equal(t, "", <-s.OnDeallocate())
 }
 
 func Test_OnConfigurationChanged(t *testing.T) {

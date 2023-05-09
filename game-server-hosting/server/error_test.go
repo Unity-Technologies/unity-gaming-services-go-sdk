@@ -18,9 +18,9 @@ func Test_pushError(t *testing.T) {
 	b := errors.New("b")
 	c := errors.New("c")
 
-	s.pushError(a)
-	s.pushError(b)
-	s.pushError(c)
+	s.PushError(a)
+	s.PushError(b)
+	s.PushError(c)
 
 	require.Len(t, s.chanError, 1)
 	require.Equal(t, a, <-s.chanError)

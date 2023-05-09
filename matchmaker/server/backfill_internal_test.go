@@ -1,29 +1,19 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 
+	gsh "github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server"
 	"github.com/stretchr/testify/require"
 )
 
-type (
-	backfillTicket struct {
-		ID         string
-		Connection string
-		Attributes map[string]float64
-	}
-)
-
-func Test_approveBackfillTicket(t *testing.T) {
-	p := path.Join(t.TempDir(), "config.json")
+func localProxyServer() *httptest.Server {
 	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjAwOWFkOGYzYWJhN2U4NjRkNTg5NTVmNzYwMWY1YTgzNDg2OWJjNTMiLCJ0eXAiOiJKV1QifQ." +
 		"eyJlbnZpcm9ubWVudF9pZCI6ImJiNjc5ZWMxLTM3ZmItNDZjNi1iMmZjLWNkNDk4NzJlMmMxYSIsImV4cCI6MTY3NDg1NDEzNiwiaWF0Ijox" +
 		"NjQzMzE4MTM2LCJwcm9qZWN0X2d1aWQiOiJlODBlMmZmMS0zZmFhLTRhOTQtOWUyZC1hMDIxMDdhZTJhODMifQ.FejrCFVs351JQmt_QYUGy" +
@@ -36,14 +26,18 @@ func Test_approveBackfillTicket(t *testing.T) {
 		"iQJ_pZU4QFzIJI"
 
 	// Example JWT token with invalid signature
-	localProxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{
   			"token": "%s",
   			"error": ""
 		}
 `, token)
 	}))
-	defer localProxyServer.Close()
+}
+
+func Test_approveBackfillTicket(t *testing.T) {
+	proxy := localProxyServer()
+	defer proxy.Close()
 
 	mmBackfillServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{
@@ -56,43 +50,52 @@ func Test_approveBackfillTicket(t *testing.T) {
 	}))
 	defer mmBackfillServer.Close()
 
-	require.NoError(t, os.WriteFile(p, []byte(fmt.Sprintf(`{
-			"allocatedUUID": "77c31f84-b890-48e8-be08-5db9a551bba3",
-			"matchmakerUrl": "%s",
-			"localProxyUrl": "%s"
-		}`, mmBackfillServer.URL, localProxyServer.URL)), 0o600))
-
-	g, err := New(TypeAllocation)
-	require.NoError(t, err)
-	require.NotNil(t, g)
-	g.cfgFile = p
-	g.httpClient = &http.Client{
-		Timeout: 1 * time.Second,
-	}
-
-	c, err := newConfigFromFile(g.cfgFile)
+	g, err := New(gsh.TypeAllocation)
 	require.NoError(t, err)
 
-	resp, err := g.approveBackfillTicket(c)
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	defer resp.Body.Close()
-
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.NotNil(t, bodyBytes)
-
-	var ticket backfillTicket
-	err = json.Unmarshal(bodyBytes, &ticket)
+	ticket, err := g.approveBackfillTicket(&gsh.Config{
+		AllocatedUUID: "77c31f84-b890-48e8-be08-5db9a551bba3",
+		LocalProxyURL: proxy.URL,
+		Extra: map[string]string{
+			"matchmakerUrl": mmBackfillServer.URL,
+		},
+	}, "token")
 	require.NoError(t, err)
 	require.NotNil(t, ticket)
-
 	require.Equal(t, "77c31f84-b890-48e8-be08-5db9a551bba3", ticket.ID)
 	require.Equal(t, "127.0.0.1:9555", ticket.Connection)
 	require.Equal(t, 1, len(ticket.Attributes))
 	require.Equal(t, 100.0, ticket.Attributes["att1"])
+}
 
-	close(g.done)
+func Test_wrapWithConfigAndJWT(t *testing.T) {
+	proxy := localProxyServer()
+	defer proxy.Close()
+
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), "server.json")
+	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
+		"localProxyUrl": "%s",
+		"queryPort": "%s"
+	}`, proxy.URL, strings.Split(queryEndpoint, ":")[1])), 0600))
+
+	s, err := New(gsh.TypeAllocation, gsh.WithConfigPath(path))
+	require.NoError(t, err)
+
+	require.NoError(t, s.Start())
+
+	ticket, err := s.wrapWithConfigAndJWT(func(c *gsh.Config, token string) (*BackfillTicket, error) {
+		require.Equal(t, s.Config(), *c)
+		return &BackfillTicket{
+			ID: "abc",
+		}, nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, &BackfillTicket{
+		ID: "abc",
+	}, ticket)
+
+	require.NoError(t, s.Stop())
 }

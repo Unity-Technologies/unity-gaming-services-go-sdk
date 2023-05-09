@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/a2s"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 )
@@ -15,12 +16,17 @@ type (
 
 const (
 	// QueryProtocolA2S represents the 'a2s' query protocol.
+	// Although A2S is supported, SQP is the recommended query implementation.
 	// Documentation: https://docs.unity.com/game-server-hosting/en/manual/concepts/a2s
 	QueryProtocolA2S = QueryProtocol("a2s")
 
 	// QueryProtocolSQP represents the 'sqp' query protocol.
+	// SQP is the recommended query protocol.
 	// Documentation: https://docs.unity.com/game-server-hosting/en/manual/concepts/sqp
 	QueryProtocolSQP = QueryProtocol("sqp")
+
+	// QueryProtocolRecommended represents the recommended query protocol.
+	QueryProtocolRecommended
 )
 
 var (
@@ -87,13 +93,13 @@ func (s *Server) handleQuery() {
 				return
 			}
 
-			s.pushError(fmt.Errorf("query: error reading from socket: %w", err))
+			s.PushError(fmt.Errorf("query: error reading from socket: %w", err))
 			continue
 		}
 
 		resp, err := s.queryProto.Respond(to.String(), buf)
 		if err != nil {
-			s.pushError(fmt.Errorf("query: error responding: %w", err))
+			s.PushError(fmt.Errorf("query: error responding: %w", err))
 			continue
 		}
 
@@ -102,7 +108,7 @@ func (s *Server) handleQuery() {
 				return
 			}
 
-			s.pushError(fmt.Errorf("query: error writing to socket: %w", err))
+			s.PushError(fmt.Errorf("query: error writing to socket: %w", err))
 			continue
 		}
 	}

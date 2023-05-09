@@ -30,22 +30,19 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 	cfg, err := newConfigFromFile(f)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
-		AllocatedUUID:     "a-uuid",
-		EnableBackfillStr: "false",
-		IP:                "127.0.0.1",
-		IPv6:              "::1",
-		LocalProxyURL:     "http://localhost:8086",
-		MatchmakerURL:     "https://matchmaker.services.api.unity.com",
-		Port:              "9000",
-		QueryPort:         "9010",
-		QueryType:         QueryProtocolSQP,
-		ServerID:          "1234",
-		ServerLogDir:      "1234/logs",
+		AllocatedUUID: "a-uuid",
+		IP:            "127.0.0.1",
+		IPv6:          "::1",
+		LocalProxyURL: "http://localhost:8086",
+		Port:          "9000",
+		QueryPort:     "9010",
+		QueryType:     QueryProtocolSQP,
+		ServerID:      "1234",
+		ServerLogDir:  "1234/logs",
 		Extra: map[string]string{
 			"a": "b",
 		},
 	}, cfg)
-	require.False(t, cfg.BackfillEnabled())
 }
 
 func Test_NewConfigFromFile_supported_values(t *testing.T) {
@@ -54,11 +51,9 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		os.WriteFile(f, []byte(
 			`{
 				"allocatedUUID": "a-uuid",
-				"enableBackfill": "true",
 				"ip": "127.0.0.1",
 				"ipv6": "::1",
 				"localProxyUrl": "http://my-localproxy",
-				"matchmakerUrl": "https://my-matchmaker",
 				"port": "9000",
 				"queryPort": "9010",
 				"serverID": "1234",
@@ -72,18 +67,15 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 	cfg, err := newConfigFromFile(f)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
-		AllocatedUUID:     "a-uuid",
-		EnableBackfillStr: "true",
-		IP:                "127.0.0.1",
-		IPv6:              "::1",
-		LocalProxyURL:     "http://my-localproxy",
-		MatchmakerURL:     "https://my-matchmaker",
-		Port:              "9000",
-		QueryPort:         "9010",
-		QueryType:         QueryProtocolSQP,
-		ServerID:          "1234",
-		ServerLogDir:      "1234/logs",
-		Extra:             map[string]string{},
+		AllocatedUUID: "a-uuid",
+		IP:            "127.0.0.1",
+		IPv6:          "::1",
+		LocalProxyURL: "http://my-localproxy",
+		Port:          "9000",
+		QueryPort:     "9010",
+		QueryType:     QueryProtocolSQP,
+		ServerID:      "1234",
+		ServerLogDir:  "1234/logs",
+		Extra:         map[string]string{},
 	}, cfg)
-	require.True(t, cfg.BackfillEnabled())
 }

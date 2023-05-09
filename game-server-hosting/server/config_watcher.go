@@ -44,7 +44,7 @@ func (s *Server) processInternalEvents() {
 				// which results in two writes. The first write will produce an
 				// empty file, meaning JSON parsing will fail.
 				if !errors.Is(err, io.EOF) {
-					s.pushError(fmt.Errorf("error parsing new configuration: %w", err))
+					s.PushError(fmt.Errorf("error parsing new configuration: %w", err))
 				}
 
 				continue
@@ -57,19 +57,14 @@ func (s *Server) processInternalEvents() {
 				// not supported just yet
 			}
 
-			// Configuration has changed - propagate to consumer. This is optional, so make sure we don't deadlock if
-			// nobody is listening.
-			select {
-			case s.chanConfigurationChanged <- *c:
-			default:
-			}
+			s.setConfig(c)
 
 		case err, ok := <-w.Errors:
 			if !ok {
 				return
 			}
 
-			s.pushError(fmt.Errorf("error watching config file: %w", err))
+			s.PushError(fmt.Errorf("error watching config file: %w", err))
 
 		case <-s.done:
 			_ = w.Close()
@@ -84,8 +79,8 @@ func (s *Server) processInternalEvents() {
 // depending on the presence of an allocation ID.
 func (s *Server) triggerAllocationEvents(c *Config) {
 	if c.AllocatedUUID != "" {
-		s.chanAllocated <- *c
+		s.chanAllocated <- c.AllocatedUUID
 	} else {
-		s.chanDeallocated <- *c
+		s.chanDeallocated <- ""
 	}
 }

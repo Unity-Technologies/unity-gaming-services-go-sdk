@@ -1,9 +1,10 @@
 package server
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_WithQueryWriteBuffer(t *testing.T) {
@@ -25,4 +26,11 @@ func Test_WithQueryWriteDeadlineDuration(t *testing.T) {
 	s := &Server{}
 	WithQueryWriteDeadlineDuration(1 * time.Second)(s)
 	require.Equal(t, 1*time.Second, s.queryWriteDeadlineDuration)
+}
+
+func Test_WithConfigPath(t *testing.T) {
+	t.Parallel()
+	s := &Server{}
+	WithConfigPath("foo")(s)
+	require.Equal(t, "foo", s.cfgFile)
 }

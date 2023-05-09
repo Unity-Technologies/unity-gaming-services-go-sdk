@@ -28,17 +28,14 @@ func Test_watchConfig(t *testing.T) {
 		"maxPlayers": "12"
 	}`), 0o600))
 	ev := <-g.OnAllocate()
-	require.Equal(t, "alloc-uuid", ev.AllocatedUUID)
-	require.Equal(t, "12", ev.Extra["maxPlayers"])
-	require.Equal(t, QueryProtocolSQP, ev.QueryType)
+	require.Equal(t, "alloc-uuid", ev)
 
 	// Deallocate
 	require.NoError(t, os.WriteFile(p, []byte(`{
 		"allocatedUUID": ""
 	}`), 0o600))
 	ev = <-g.OnDeallocate()
-	require.Equal(t, QueryProtocolSQP, ev.QueryType)
-	require.Equal(t, "", ev.AllocatedUUID)
+	require.Equal(t, "", ev)
 
 	close(g.done)
 }

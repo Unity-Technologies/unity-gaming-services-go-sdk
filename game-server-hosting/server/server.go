@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -22,10 +21,6 @@ type (
 	Server struct {
 		// cfgFile is the file path this game uses to read its configuration from
 		cfgFile string
-
-		// httpClient is an http client that is used to retrieve the token from the payload
-		// proxy as well as send backfill ticket approvals to the matchmaker
-		httpClient *http.Client
 
 		// internalEventProcessorReady is a channel that, when written to,
 		// indicates that the internal event processor is ready.
@@ -47,10 +42,14 @@ type (
 		stateLock sync.Mutex
 
 		// Event Channels
-		chanAllocated            chan Config
+		chanAllocated            chan string
 		chanConfigurationChanged chan Config
-		chanDeallocated          chan Config
+		chanDeallocated          chan string
 		chanError                chan error
+
+		// Configuration-related items
+		currentConfigMtx sync.RWMutex
+		currentConfig    Config
 
 		// Query-related configuration
 		queryWriteBufferSizeBytes  int
@@ -100,8 +99,8 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 	s := &Server{
 		serverType:                  serverType,
 		cfgFile:                     filepath.Join(dir, "server.json"),
-		chanAllocated:               make(chan Config, 1),
-		chanDeallocated:             make(chan Config, 1),
+		chanAllocated:               make(chan string, 1),
+		chanDeallocated:             make(chan string, 1),
 		chanError:                   make(chan error, 1),
 		chanConfigurationChanged:    make(chan Config, 1),
 		internalEventProcessorReady: make(chan struct{}, 1),
@@ -128,6 +127,8 @@ func (s *Server) Start() error {
 		return err
 	}
 
+	s.setConfig(c)
+
 	if err = s.switchQueryProtocol(*c); err != nil {
 		return err
 	}
@@ -140,14 +141,10 @@ func (s *Server) Start() error {
 	// Wait until the internal event processor is ready.
 	<-s.internalEventProcessorReady
 
-	if c.BackfillEnabled() {
-		go s.keepAliveBackfill(c)
-	}
-
 	// Handle the app starting with an allocation
 	if c.AllocatedUUID != "" {
 		s.chanConfigurationChanged <- *c
-		s.chanAllocated <- *c
+		s.chanAllocated <- c.AllocatedUUID
 	}
 
 	return nil
@@ -172,7 +169,7 @@ func (s *Server) Stop() error {
 	}
 
 	// Publish a de-allocation message.
-	s.chanDeallocated <- Config{}
+	s.chanDeallocated <- ""
 	close(s.done)
 	s.wg.Wait()
 
@@ -180,12 +177,12 @@ func (s *Server) Stop() error {
 }
 
 // OnAllocate returns a read-only channel that receives messages when the server is allocated.
-func (s *Server) OnAllocate() <-chan Config {
+func (s *Server) OnAllocate() <-chan string {
 	return s.chanAllocated
 }
 
 // OnDeallocate returns a read-only channel that receives messages when the server is de-allocated.
-func (s *Server) OnDeallocate() <-chan Config {
+func (s *Server) OnDeallocate() <-chan string {
 	return s.chanDeallocated
 }
 
@@ -245,4 +242,25 @@ func (s *Server) SetGameMap(gameMap string) {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()
 	s.state.Map = gameMap
+}
+
+// Config returns a copy of the configuration the server is currently using.
+func (s *Server) Config() Config {
+	s.currentConfigMtx.Lock()
+	defer s.currentConfigMtx.Unlock()
+	return s.currentConfig
+}
+
+// setConfig sets the configuration the server is currently using.
+func (s *Server) setConfig(c *Config) {
+	s.currentConfigMtx.Lock()
+	s.currentConfig = *c
+	s.currentConfigMtx.Unlock()
+
+	// Configuration has changed - propagate to consumer. This is optional, so make sure we don't deadlock if
+	// nobody is listening.
+	select {
+	case s.chanConfigurationChanged <- *c:
+	default:
+	}
 }
