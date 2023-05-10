@@ -9,7 +9,8 @@ import (
 )
 
 func Test_NewConfigFromFile_defaults(t *testing.T) {
-	f := filepath.Join(t.TempDir(), "new-config-from-file")
+	dir := t.TempDir()
+	f := filepath.Join(dir, "new-config-from-file")
 	require.NoError(t,
 		os.WriteFile(f, []byte(
 			`{
@@ -27,7 +28,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 		),
 	)
 
-	cfg, err := newConfigFromFile(f)
+	cfg, err := newConfigFromFile(f, dir)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
 		AllocatedUUID: "a-uuid",
@@ -38,7 +39,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		ServerID:      "1234",
-		ServerLogDir:  "1234/logs",
+		ServerLogDir:  filepath.Join(dir, "1234/logs"),
 		Extra: map[string]string{
 			"a": "b",
 		},
@@ -46,7 +47,8 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 }
 
 func Test_NewConfigFromFile_supported_values(t *testing.T) {
-	f := filepath.Join(t.TempDir(), "new-config-from-file")
+	dir := t.TempDir()
+	f := filepath.Join(dir, "new-config-from-file")
 	require.NoError(t,
 		os.WriteFile(f, []byte(
 			`{
@@ -64,7 +66,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		),
 	)
 
-	cfg, err := newConfigFromFile(f)
+	cfg, err := newConfigFromFile(f, dir)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
 		AllocatedUUID: "a-uuid",
@@ -75,7 +77,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		ServerID:      "1234",
-		ServerLogDir:  "1234/logs",
+		ServerLogDir:  filepath.Join(dir, "1234/logs"),
 		Extra:         map[string]string{},
 	}, cfg)
 }

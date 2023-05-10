@@ -59,6 +59,9 @@ type (
 		// Synchronisation
 		done chan struct{}
 		wg   sync.WaitGroup
+
+		// Environment
+		homeDir string
 	}
 )
 
@@ -99,6 +102,7 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 	s := &Server{
 		serverType:                  serverType,
 		cfgFile:                     filepath.Join(dir, "server.json"),
+		homeDir:                     dir,
 		chanAllocated:               make(chan string, 1),
 		chanDeallocated:             make(chan string, 1),
 		chanError:                   make(chan error, 1),
@@ -122,14 +126,24 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 // The event loop will also listen for changes to the `server.json` configuration file, publishing any
 // changes in the form of allocation or de-allocation messages.
 // As the server can start in an allocated state, make sure that another goroutine is consuming messages from at least
-// the `OnAllocated()` channel before calling this method.
+// the `OnAllocated()` and `OnDeallocated()` channels before calling this method.
 func (s *Server) Start() error {
-	c, err := newConfigFromFile(s.cfgFile)
+	c, err := newConfigFromFile(s.cfgFile, s.homeDir)
 	if err != nil {
 		return err
 	}
 
 	s.setConfig(c)
+
+	// Create the directory the logs will be present in.
+	if err = os.MkdirAll(c.ServerLogDir, 0744); err != nil {
+		return fmt.Errorf("error creating log directory: %w", err)
+	}
+
+	// Set some defaults for the query endpoint. These can get overwritten by the user, but best to set some defaults
+	// to keep friction to a minimum.
+	s.SetServerName(fmt.Sprintf("go-sdk-server - %s", c.ServerID))
+	s.SetGameMap("go-sdk-map")
 
 	if err = s.switchQueryProtocol(*c); err != nil {
 		return err

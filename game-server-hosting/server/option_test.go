@@ -34,3 +34,10 @@ func Test_WithConfigPath(t *testing.T) {
 	WithConfigPath("foo")(s)
 	require.Equal(t, "foo", s.cfgFile)
 }
+
+func Test_WithHomeDirectory(t *testing.T) {
+	t.Parallel()
+	s := &Server{}
+	WithHomeDirectory("foo")(s)
+	require.Equal(t, "foo", s.homeDir)
+}

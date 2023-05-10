@@ -37,20 +37,35 @@ func getRandomPortAssignment() (string, error) {
 func Test_StartStopQuery(t *testing.T) {
 	t.Parallel()
 
+	dir := t.TempDir()
 	queryEndpoint, err := getRandomPortAssignment()
 	require.NoError(t, err)
 
-	path := filepath.Join(t.TempDir(), "server.json")
+	path := filepath.Join(dir, "server.json")
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
-		"queryPort": "%s"
+		"queryPort": "%s",
+		"serverID": "1234",
+		"serverLogDir": "1234/logs"
 	}`, strings.Split(queryEndpoint, ":")[1])), 0600))
 
-	s, err := New(TypeAllocation)
+	s, err := New(
+		TypeAllocation,
+		WithConfigPath(path),
+		WithHomeDirectory(dir),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, s)
-	s.cfgFile = path
 
 	require.NoError(t, s.Start())
+
+	// Make sure logging directory has been created
+	require.DirExists(t, filepath.Join(dir, "1234", "logs"))
+
+	// Make sure query parameters have been set
+	s.stateLock.Lock()
+	require.Equal(t, "go-sdk-server - 1234", s.state.ServerName)
+	require.Equal(t, "go-sdk-map", s.state.Map)
+	s.stateLock.Unlock()
 
 	// Check query port is open on SQP (check that we receive an SQP challenge response)
 	conn, err := net.Dial("udp4", queryEndpoint)
