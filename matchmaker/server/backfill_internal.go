@@ -26,6 +26,7 @@ type (
 
 var (
 	errTokenFetch = errors.New("failed to retrieve JWT token")
+	errRetry      = errors.New("retry")
 )
 
 // keepAliveBackfill keeps the backfill ticket alive for the current allocation.
@@ -38,6 +39,13 @@ func (s *Server) keepAliveBackfill() {
 		select {
 		case <-ticker.C:
 			if _, err := s.wrapWithConfigAndJWT(s.approveBackfillTicket); err != nil {
+				// If we want to retry, try once more before pushing an error.
+				if errors.Is(err, errRetry) {
+					if _, err = s.wrapWithConfigAndJWT(s.approveBackfillTicket); err == nil {
+						continue
+					}
+				}
+
 				s.PushError(fmt.Errorf("error approving backfill ticket: %w", err))
 			}
 		case <-s.done:
@@ -88,7 +96,20 @@ func (s *Server) approveBackfillTicket(c *gsh.Config, token string) (*BackfillTi
 		return nil, fmt.Errorf("error making request to matchmaker: %w", err)
 	}
 
-	if resp == nil || resp.StatusCode != http.StatusOK {
+	if resp == nil {
+		return nil, ErrBackfillApprove
+	}
+
+	switch resp.StatusCode {
+	case http.StatusTooManyRequests:
+		// Retry if the server says we've made too many requests.
+		return nil, errRetry
+
+	case http.StatusOK:
+		// All good, do nothing.
+
+	default:
+		// Backfill approval has failed.
 		return nil, ErrBackfillApprove
 	}
 

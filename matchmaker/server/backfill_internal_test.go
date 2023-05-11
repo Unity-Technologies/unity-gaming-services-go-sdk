@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func localProxyServer() *httptest.Server {
+func localProxyServer() (*httptest.Server, string) {
 	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjAwOWFkOGYzYWJhN2U4NjRkNTg5NTVmNzYwMWY1YTgzNDg2OWJjNTMiLCJ0eXAiOiJKV1QifQ." +
 		"eyJlbnZpcm9ubWVudF9pZCI6ImJiNjc5ZWMxLTM3ZmItNDZjNi1iMmZjLWNkNDk4NzJlMmMxYSIsImV4cCI6MTY3NDg1NDEzNiwiaWF0Ijox" +
 		"NjQzMzE4MTM2LCJwcm9qZWN0X2d1aWQiOiJlODBlMmZmMS0zZmFhLTRhOTQtOWUyZC1hMDIxMDdhZTJhODMifQ.FejrCFVs351JQmt_QYUGy" +
@@ -32,12 +32,11 @@ func localProxyServer() *httptest.Server {
   			"error": ""
 		}
 `, token)
-	}))
+	})), token
 }
 
 func Test_approveBackfillTicket(t *testing.T) {
-	proxy := localProxyServer()
-	defer proxy.Close()
+	t.Parallel()
 
 	mmBackfillServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{
@@ -53,13 +52,8 @@ func Test_approveBackfillTicket(t *testing.T) {
 	g, err := New(gsh.TypeAllocation)
 	require.NoError(t, err)
 
-	ticket, err := g.approveBackfillTicket(&gsh.Config{}, "token")
-	require.Nil(t, ticket)
-	require.ErrorIs(t, err, ErrNotAllocated)
-
-	ticket, err = g.approveBackfillTicket(&gsh.Config{
+	ticket, err := g.approveBackfillTicket(&gsh.Config{
 		AllocatedUUID: "77c31f84-b890-48e8-be08-5db9a551bba3",
-		LocalProxyURL: proxy.URL,
 		Extra: map[string]string{
 			"matchmakerUrl": mmBackfillServer.URL,
 		},
@@ -72,8 +66,97 @@ func Test_approveBackfillTicket(t *testing.T) {
 	require.Equal(t, 100.0, ticket.Attributes["att1"])
 }
 
+func Test_approveBackfillTicket_NotAllocated(t *testing.T) {
+	t.Parallel()
+
+	g, err := New(gsh.TypeAllocation)
+	require.NoError(t, err)
+
+	ticket, err := g.approveBackfillTicket(&gsh.Config{}, "token")
+	require.Nil(t, ticket)
+	require.ErrorIs(t, err, ErrNotAllocated)
+}
+
+func Test_approveBackfillTicket_TooManyRequests(t *testing.T) {
+	t.Parallel()
+
+	mmBackfillServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer mmBackfillServer.Close()
+
+	g, err := New(gsh.TypeAllocation)
+	require.NoError(t, err)
+
+	ticket, err := g.approveBackfillTicket(&gsh.Config{
+		AllocatedUUID: "77c31f84-b890-48e8-be08-5db9a551bba3",
+		Extra: map[string]string{
+			"matchmakerUrl": mmBackfillServer.URL,
+		},
+	}, "token")
+	require.Nil(t, ticket)
+	require.ErrorIs(t, err, errRetry)
+}
+
+func Test_approveBackfillTicket_NonOKRequest(t *testing.T) {
+	t.Parallel()
+
+	mmBackfillServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer mmBackfillServer.Close()
+
+	g, err := New(gsh.TypeAllocation)
+	require.NoError(t, err)
+
+	ticket, err := g.approveBackfillTicket(&gsh.Config{
+		AllocatedUUID: "77c31f84-b890-48e8-be08-5db9a551bba3",
+		Extra: map[string]string{
+			"matchmakerUrl": mmBackfillServer.URL,
+		},
+	}, "token")
+	require.Nil(t, ticket)
+	require.ErrorIs(t, err, ErrBackfillApprove)
+}
+
+func Test_getJwtToken(t *testing.T) {
+	t.Parallel()
+
+	proxy, token := localProxyServer()
+	defer proxy.Close()
+
+	g, err := New(gsh.TypeAllocation)
+	require.NoError(t, err)
+
+	result, err := g.getJwtToken(&gsh.Config{
+		LocalProxyURL: proxy.URL,
+	})
+	require.NoError(t, err)
+	require.Equal(t, token, result)
+}
+
+func Test_getJwtToken_error(t *testing.T) {
+	t.Parallel()
+
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer proxy.Close()
+
+	g, err := New(gsh.TypeAllocation)
+	require.NoError(t, err)
+
+	result, err := g.getJwtToken(&gsh.Config{
+		LocalProxyURL: proxy.URL,
+	})
+	require.Empty(t, result)
+	require.ErrorIs(t, err, errTokenFetch)
+}
+
 func Test_wrapWithConfigAndJWT(t *testing.T) {
-	proxy := localProxyServer()
+	t.Parallel()
+
+	proxy, _ := localProxyServer()
 	defer proxy.Close()
 
 	queryEndpoint, err := getRandomPortAssignment()
