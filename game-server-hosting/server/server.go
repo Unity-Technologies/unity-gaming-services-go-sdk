@@ -67,11 +67,13 @@ type (
 
 const (
 	// TypeAllocation represents a server which is using the 'allocations' model of server usage.
-	TypeAllocation = Type(0)
+	TypeAllocation = Type(iota)
 
 	// TypeReservation represents a server which is using the 'reservations' model of server usage.
-	TypeReservation = Type(1)
+	TypeReservation
+)
 
+const (
 	// DefaultWriteBufferSizeBytes represents the default size of the write buffer for the query handler.
 	DefaultWriteBufferSizeBytes = 1024
 
