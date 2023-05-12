@@ -162,11 +162,13 @@ func Test_wrapWithConfigAndJWT(t *testing.T) {
 	queryEndpoint, err := getRandomPortAssignment()
 	require.NoError(t, err)
 
-	path := filepath.Join(t.TempDir(), "server.json")
+	dir := t.TempDir()
+	path := filepath.Join(dir, "server.json")
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"localProxyUrl": "%s",
-		"queryPort": "%s"
-	}`, proxy.URL, strings.Split(queryEndpoint, ":")[1])), 0o600))
+		"queryPort": "%s",
+		"serverLogDir": "%s"
+	}`, proxy.URL, strings.Split(queryEndpoint, ":")[1], dir)), 0o600))
 
 	s, err := New(gsh.TypeAllocation, gsh.WithConfigPath(path))
 	require.NoError(t, err)

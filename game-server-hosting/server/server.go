@@ -59,9 +59,6 @@ type (
 		// Synchronisation
 		done chan struct{}
 		wg   sync.WaitGroup
-
-		// Environment
-		homeDir string
 	}
 )
 
@@ -102,7 +99,6 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 	s := &Server{
 		serverType:                  serverType,
 		cfgFile:                     filepath.Join(dir, "server.json"),
-		homeDir:                     dir,
 		chanAllocated:               make(chan string, 1),
 		chanDeallocated:             make(chan string, 1),
 		chanError:                   make(chan error, 1),
@@ -128,7 +124,7 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 // As the server can start in an allocated state, make sure that another goroutine is consuming messages from at least
 // the `OnAllocated()` and `OnDeallocated()` channels before calling this method.
 func (s *Server) Start() error {
-	c, err := newConfigFromFile(s.cfgFile, s.homeDir)
+	c, err := newConfigFromFile(s.cfgFile)
 	if err != nil {
 		return err
 	}

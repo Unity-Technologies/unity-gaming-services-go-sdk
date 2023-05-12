@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 )
 
@@ -47,7 +46,7 @@ type (
 
 // newConfigFromFile loads configuration from the specified file. The returned ServerLogDir field has its
 // value modified to include the absolute path from the current home directory.
-func newConfigFromFile(configFile string, homeDirectory string) (*Config, error) {
+func newConfigFromFile(configFile string) (*Config, error) {
 	var cfg *Config
 
 	f, err := os.Open(configFile)
@@ -76,9 +75,6 @@ func newConfigFromFile(configFile string, homeDirectory string) (*Config, error)
 	for i := 0; i < v.NumField(); i++ {
 		delete(cfg.Extra, v.Field(i).Tag.Get("json"))
 	}
-
-	// Fix log directory so that it is relative to $HOME.
-	cfg.ServerLogDir = filepath.Join(homeDirectory, cfg.ServerLogDir)
 
 	// Set query type to the recommended protocol if one is not defined.
 	if cfg.QueryType == "" {

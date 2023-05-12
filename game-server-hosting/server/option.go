@@ -35,11 +35,3 @@ func WithConfigPath(path string) Option {
 		s.cfgFile = path
 	}
 }
-
-// WithHomeDirectory sets the home directory for the server. In most circumstances, the default value is reasonable
-// to use.
-func WithHomeDirectory(dir string) Option {
-	return func(s *Server) {
-		s.homeDir = dir
-	}
-}

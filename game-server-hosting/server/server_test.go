@@ -45,13 +45,12 @@ func Test_StartStopQuery(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"queryPort": "%s",
 		"serverID": "1234",
-		"serverLogDir": "1234/logs"
-	}`, strings.Split(queryEndpoint, ":")[1])), 0o600))
+		"serverLogDir": "%s"
+	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"))), 0o600))
 
 	s, err := New(
 		TypeAllocation,
 		WithConfigPath(path),
-		WithHomeDirectory(dir),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, s)
@@ -59,7 +58,7 @@ func Test_StartStopQuery(t *testing.T) {
 	require.NoError(t, s.Start())
 
 	// Make sure logging directory has been created
-	require.DirExists(t, filepath.Join(dir, "1234", "logs"))
+	require.DirExists(t, filepath.Join(dir, "logs"))
 
 	// Make sure query parameters have been set
 	s.stateLock.Lock()

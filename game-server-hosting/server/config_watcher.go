@@ -38,7 +38,7 @@ func (s *Server) processInternalEvents() {
 				continue
 			}
 
-			c, err := newConfigFromFile(s.cfgFile, s.homeDir)
+			c, err := newConfigFromFile(s.cfgFile)
 			if err != nil {
 				// Multiplay truncates the file when a deallocation occurs,
 				// which results in two writes. The first write will produce an
