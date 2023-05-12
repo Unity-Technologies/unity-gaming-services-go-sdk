@@ -21,12 +21,12 @@ func Test_Client_Lifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	allocateCalls := int32(0)
-	c.RegisterCallback(ServerAllocateEvent, func(ev Event) {
+	c.RegisterCallback(AllocateEventType, func(ev Event) {
 		atomic.AddInt32(&allocateCalls, 1)
 	})
 
 	deallocateCalls := int32(0)
-	c.RegisterCallback(ServerDeallocateEvent, func(ev Event) {
+	c.RegisterCallback(DeallocateEventType, func(ev Event) {
 		atomic.AddInt32(&deallocateCalls, 1)
 	})
 
@@ -35,11 +35,11 @@ func Test_Client_Lifecycle(t *testing.T) {
 	channel := "server#1"
 
 	// Publish an allocation
-	_, err = svr.Node.Publish(channel, []byte(`{"EventType":"ServerAllocateEvent", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
+	_, err = svr.Node.Publish(channel, []byte(`{"EventType":"AllocateEventType", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
 	require.NoError(t, err)
 
 	// Publish a deallocation
-	_, err = svr.Node.Publish(channel, []byte(`{"EventType":"ServerDeallocateEvent", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
+	_, err = svr.Node.Publish(channel, []byte(`{"EventType":"DeallocateEventType", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {

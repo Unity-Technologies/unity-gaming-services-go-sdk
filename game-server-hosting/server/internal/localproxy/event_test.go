@@ -9,30 +9,22 @@ import (
 func Test_unmarshalEvent(t *testing.T) {
 	t.Parallel()
 
-	ev, err := unmarshalEvent([]byte(`{"EventType":"ServerInfoEvent", "EventID": "event-id", "ServerID": 1}`))
-	require.NoError(t, err)
-	require.Equal(t, &BaseEvent{
-		Typ:      ServerInfoEvent,
-		ServerID: 1,
-		EventID:  "event-id",
-	}, ev)
-
-	ev, err = unmarshalEvent([]byte(`{"EventType":"ServerAllocateEvent", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
+	ev, err := unmarshalEvent([]byte(`{"EventType":"AllocateEventType", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
 	require.NoError(t, err)
 	require.Equal(t, &AllocateEvent{
 		BaseEvent: &BaseEvent{
-			Typ:      ServerAllocateEvent,
+			Typ:      AllocateEventType,
 			ServerID: 1,
 			EventID:  "event-id",
 		},
 		AllocationID: "alloc-id",
 	}, ev)
 
-	ev, err = unmarshalEvent([]byte(`{"EventType":"ServerDeallocateEvent", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
+	ev, err = unmarshalEvent([]byte(`{"EventType":"DeallocateEventType", "EventID": "event-id", "ServerID": 1, "AllocationID": "alloc-id"}`))
 	require.NoError(t, err)
 	require.Equal(t, &DeallocateEvent{
 		BaseEvent: &BaseEvent{
-			Typ:      ServerDeallocateEvent,
+			Typ:      DeallocateEventType,
 			ServerID: 1,
 			EventID:  "event-id",
 		},

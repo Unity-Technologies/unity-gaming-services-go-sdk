@@ -64,7 +64,6 @@ func (c *Client) RegisterCallback(ev EventType, cb func(Event)) {
 
 // OnPublish implements centrifuge.PublishHandler and is triggered when a message is published to this subscriber.
 func (c *Client) OnPublish(_ *centrifuge.Subscription, e centrifuge.PublishEvent) {
-	fmt.Printf("%+v\n", string(e.Data))
 	event, err := unmarshalEvent(e.Data)
 	if err != nil {
 		select {

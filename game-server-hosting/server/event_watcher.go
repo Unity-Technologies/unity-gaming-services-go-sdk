@@ -24,8 +24,8 @@ func (s *Server) listenForEvents() {
 
 	// Watch for allocate and deallocate events if the server handles allocations.
 	if s.serverType == TypeAllocation {
-		localProxyClient.RegisterCallback(localproxy.ServerAllocateEvent, s.watchAllocation)
-		localProxyClient.RegisterCallback(localproxy.ServerDeallocateEvent, s.watchDeallocation)
+		localProxyClient.RegisterCallback(localproxy.AllocateEventType, s.watchAllocation)
+		localProxyClient.RegisterCallback(localproxy.DeallocateEventType, s.watchDeallocation)
 	}
 
 	if err = localProxyClient.Start(); err != nil {

@@ -32,14 +32,11 @@ type (
 )
 
 const (
-	// ServerInfoEvent represents an informational event received by the server when it first subscribes to events.
-	ServerInfoEvent = EventType("ServerInfoEvent")
+	// AllocateEventType represents an event received by the server when it is allocated.
+	AllocateEventType = EventType("AllocateEventType")
 
-	// ServerAllocateEvent represents an event received by the server when it is allocated.
-	ServerAllocateEvent = EventType("ServerAllocateEvent")
-
-	// ServerDeallocateEvent represents an event received by the server when it is deallocated.
-	ServerDeallocateEvent = EventType("ServerDeallocateEvent")
+	// DeallocateEventType represents an event received by the server when it is deallocated.
+	DeallocateEventType = EventType("DeallocateEventType")
 )
 
 // Type returns the type of the event.
@@ -56,7 +53,7 @@ func unmarshalEvent(data []byte) (Event, error) {
 	}
 
 	switch event.Type() {
-	case ServerAllocateEvent:
+	case AllocateEventType:
 		var ae *AllocateEvent
 		if err := json.Unmarshal(data, &ae); err != nil {
 			return nil, err
@@ -64,7 +61,7 @@ func unmarshalEvent(data []byte) (Event, error) {
 
 		return ae, nil
 
-	case ServerDeallocateEvent:
+	case DeallocateEventType:
 		var de *DeallocateEvent
 		if err := json.Unmarshal(data, &de); err != nil {
 			return nil, err
