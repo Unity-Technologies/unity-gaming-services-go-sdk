@@ -9,11 +9,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// processInternalEvents processes internal events and watches the provided
-// configuration file for changes.
-// If changes are made, an allocation or deallocation event is fired depending
-// on the state of AllocatedUUID.
-func (s *Server) processInternalEvents() {
+// watchForConfigChanges watches the provided configuration file for changes.
+func (s *Server) watchForConfigChanges() {
 	w, _ := fsnotify.NewWatcher()
 	_ = w.Add(filepath.Dir(s.cfgFile))
 
@@ -50,13 +47,6 @@ func (s *Server) processInternalEvents() {
 				continue
 			}
 
-			switch s.serverType {
-			case TypeAllocation:
-				s.triggerAllocationEvents(c)
-			case TypeReservation:
-				// not supported just yet
-			}
-
 			s.setConfig(c)
 
 		case err, ok := <-w.Errors:
@@ -72,15 +62,5 @@ func (s *Server) processInternalEvents() {
 
 			return
 		}
-	}
-}
-
-// triggerAllocationEvents triggers an allocation or deallocation event
-// depending on the presence of an allocation ID.
-func (s *Server) triggerAllocationEvents(c *Config) {
-	if c.AllocatedUUID != "" {
-		s.chanAllocated <- c.AllocatedUUID
-	} else {
-		s.chanDeallocated <- ""
 	}
 }
