@@ -16,6 +16,9 @@ type (
 	}
 )
 
+// errBindingClosed is an error representing that the UDP binding is closed.
+var errBindingClosed = errors.New("binding is closed")
+
 // newUDPBinding creates a new UDP binding on the specified address.
 func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeBytes int, writeDeadlineDuration time.Duration) (*udpBinding, error) {
 	address, err := net.ResolveUDPAddr("udp4", bindAddress)
@@ -46,7 +49,7 @@ func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeB
 // Read reads data from the open connection into the supplied buffer.
 func (b *udpBinding) Read(buf []byte) (int, *net.UDPAddr, error) {
 	if b.IsDone() {
-		return 0, nil, errors.New("binding is closed")
+		return 0, nil, errBindingClosed
 	}
 
 	return b.conn.ReadFromUDP(buf)
@@ -55,7 +58,7 @@ func (b *udpBinding) Read(buf []byte) (int, *net.UDPAddr, error) {
 // Write writes data to the specified UDP address.
 func (b *udpBinding) Write(buf []byte, to *net.UDPAddr) (int, error) {
 	if b.IsDone() {
-		return 0, errors.New("binding is closed")
+		return 0, errBindingClosed
 	}
 
 	if err := b.conn.SetWriteDeadline(time.Now().Add(b.writeDeadlineDuration)); err != nil {

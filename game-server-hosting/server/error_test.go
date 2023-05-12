@@ -14,9 +14,9 @@ func Test_pushError(t *testing.T) {
 		chanError: make(chan error, 1),
 	}
 
-	a := errors.New("a")
-	b := errors.New("b")
-	c := errors.New("c")
+	a := errors.New("a") //nolint: goerr113
+	b := errors.New("b") //nolint: goerr113
+	c := errors.New("c") //nolint: goerr113
 
 	s.PushError(a)
 	s.PushError(b)

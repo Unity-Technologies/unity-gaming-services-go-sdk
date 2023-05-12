@@ -24,7 +24,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 				"a": "b"
 			}`,
 		),
-			0600,
+			0o600,
 		),
 	)
 
@@ -62,7 +62,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 				"serverLogDir": "1234/logs"
 			}`,
 		),
-			0600,
+			0o600,
 		),
 	)
 

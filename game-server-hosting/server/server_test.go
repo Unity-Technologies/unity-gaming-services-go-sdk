@@ -46,7 +46,7 @@ func Test_StartStopQuery(t *testing.T) {
 		"queryPort": "%s",
 		"serverID": "1234",
 		"serverLogDir": "1234/logs"
-	}`, strings.Split(queryEndpoint, ":")[1])), 0600))
+	}`, strings.Split(queryEndpoint, ":")[1])), 0o600))
 
 	s, err := New(
 		TypeAllocation,
@@ -132,7 +132,7 @@ func Test_OnConfigurationChanged(t *testing.T) {
 func Test_OnError(t *testing.T) {
 	t.Parallel()
 
-	e := errors.New("bang")
+	e := errors.New("bang") //nolint: goerr113
 	s, err := New(TypeAllocation)
 	require.NoError(t, err)
 

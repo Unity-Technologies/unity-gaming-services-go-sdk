@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// backfillWrapFunc is an alias for a function which can be wrapped by `wrapWithConfigAndJWT()`
+	// backfillWrapFunc is an alias for a function which can be wrapped by `wrapWithConfigAndJWT()`.
 	backfillWrapFunc func(c *gsh.Config, token string) (*BackfillTicket, error)
 
 	// tokenResponse is the representation of a token and an error from the payload proxy service.

@@ -9,17 +9,17 @@ type (
 	// Documentation: https://services.docs.unity.com/matchmaker/v2/index.html#tag/Backfill/operation/approveBackfillTicket
 	BackfillTicket struct {
 		// ID represents the backfill ticket ID.
-		ID string
+		ID string `json:"id"`
 
 		// Connection represents the IP address and port of the server that creates the backfill.
 		// The IP address format is ip:port.
-		Connection string
+		Connection string `json:"connection"`
 
 		// Attributes represents an object that holds a dictionary of attributes (number or string),
 		// indexed by the attribute name. The attributes are compared against the corresponding filters
 		// defined in the matchmaking config and used to segment the ticket population into pools.
 		// The default pool is used if a pool isn't provided.
-		Attributes map[string]float64
+		Attributes map[string]float64 `json:"attributes"`
 	}
 )
 
