@@ -30,4 +30,4 @@ Component Name: centrifugal/centrifuge-go
 
 License Type: "MIT"
 
-[centrifuge License](https://github.com/centrifugal/centrifuge-go/blob/master/LICENSE)
+[centrifuge-go License](https://github.com/centrifugal/centrifuge-go/blob/master/LICENSE)
