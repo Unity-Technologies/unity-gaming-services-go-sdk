@@ -59,7 +59,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 				"port": "9000",
 				"queryPort": "9010",
 				"serverID": "1234",
-				"serverLogDir": "/logs"
+				"serverLogDir": "/mnt/unity/logs/"
 			}`,
 		),
 			0o600,
@@ -77,7 +77,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		ServerID:      "1234",
-		ServerLogDir:  "/logs",
+		ServerLogDir:  "/mnt/unity/logs/",
 		Extra:         map[string]string{},
 	}, cfg)
 }
