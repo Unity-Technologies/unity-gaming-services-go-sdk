@@ -43,7 +43,7 @@ func Test_StartStopQuery(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"queryPort": "%s",
 		"serverLogDir": "1234/logs"
-	}`, strings.Split(queryEndpoint, ":")[1])), 0600))
+	}`, strings.Split(queryEndpoint, ":")[1])), 0o600))
 
 	s, err := New(
 		gsh.TypeAllocation,

@@ -84,10 +84,8 @@ const (
 	DefaultReadBufferSizeBytes = 1024
 )
 
-var (
-	// ErrReservationsNotYetSupported represents that a reservation-based server is not yet supported by the SDK.
-	ErrReservationsNotYetSupported = errors.New("reservations are not yet supported")
-)
+// ErrReservationsNotYetSupported represents that a reservation-based server is not yet supported by the SDK.
+var ErrReservationsNotYetSupported = errors.New("reservations are not yet supported")
 
 // New creates a new instance of Server, denoting which type of server to use.
 func New(serverType Type, opts ...Option) (*Server, error) {
@@ -138,7 +136,7 @@ func (s *Server) Start() error {
 	s.setConfig(c)
 
 	// Create the directory the logs will be present in.
-	if err = os.MkdirAll(c.ServerLogDir, 0744); err != nil {
+	if err = os.MkdirAll(c.ServerLogDir, 0o744); err != nil {
 		return fmt.Errorf("error creating log directory: %w", err)
 	}
 
@@ -225,7 +223,7 @@ func (s *Server) OnConfigurationChanged() <-chan Config {
 func (s *Server) PlayerJoined() int32 {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()
-	s.state.CurrentPlayers += 1
+	s.state.CurrentPlayers++
 	return s.state.CurrentPlayers
 }
 
@@ -234,7 +232,7 @@ func (s *Server) PlayerLeft() int32 {
 	s.stateLock.Lock()
 	defer s.stateLock.Unlock()
 	if s.state.CurrentPlayers > 0 {
-		s.state.CurrentPlayers -= 1
+		s.state.CurrentPlayers--
 	}
 	return s.state.CurrentPlayers
 }

@@ -29,10 +29,8 @@ const (
 	QueryProtocolRecommended
 )
 
-var (
-	// ErrUnsupportedQueryType is an error that specifies the provided query type is not supported by this library.Ï"
-	ErrUnsupportedQueryType = errors.New("supplied query type is not supported")
-)
+// ErrUnsupportedQueryType is an error that specifies the provided query type is not supported by this library.
+var ErrUnsupportedQueryType = errors.New("supplied query type is not supported")
 
 // switchQueryProtocol switches to a query protocol specified in the configuration.
 // The query binding endpoints are restarted to serve on this endpoint.

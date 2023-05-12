@@ -9,8 +9,7 @@ import (
 )
 
 type (
-	testEncoder struct {
-	}
+	testEncoder struct{}
 
 	// testStruct is a model which includes the supported write types: string, int, unsigned int and struct.
 	testStruct struct {
