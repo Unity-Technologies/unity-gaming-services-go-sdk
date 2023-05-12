@@ -25,7 +25,7 @@ func New(host string, serverID int64, chanError chan<- error) (*Client, error) {
 	return &Client{
 		centrifugeClient: centrifuge.NewJsonClient(
 			fmt.Sprintf("ws://%s/v1/connection/websocket", hostWithoutProtocol),
-			centrifuge.Config{},
+			centrifuge.DefaultConfig(),
 		),
 		serverID:       serverID,
 		callbacks:      map[EventType]func(Event){},
@@ -62,8 +62,8 @@ func (c *Client) RegisterCallback(ev EventType, cb func(Event)) {
 	c.callbacks[ev] = cb
 }
 
-// OnPublish implements centrifuge.PublicationHandler and is triggered when a message is published to this subscriber.
-func (c *Client) OnPublish(e centrifuge.PublicationEvent) {
+// OnPublish implements centrifuge.PublishHandler and is triggered when a message is published to this subscriber.
+func (c *Client) OnPublish(_ *centrifuge.Subscription, e centrifuge.PublishEvent) {
 	event, err := unmarshalEvent(e.Data)
 	if err != nil {
 		select {
@@ -79,8 +79,8 @@ func (c *Client) OnPublish(e centrifuge.PublicationEvent) {
 	}
 }
 
-// OnError implements centrifuge.SubscriptionErrorHandler and is triggered when an error is encountered with this subscriber.
-func (c *Client) OnError(_ centrifuge.SubscriptionErrorEvent) {
+// OnSubscribeError implements centrifuge.SubscribeErrorHandler and is triggered when an error is encountered with this subscriber.
+func (c *Client) OnSubscribeError(_ *centrifuge.Subscription, _ centrifuge.SubscribeErrorEvent) {
 	// Retry connecting to the SDK daemon. In some cases the server may be
 	// attempting to connect before the SDK daemon has registered the existence
 	// of the server.
@@ -99,9 +99,9 @@ func (c *Client) OnError(_ centrifuge.SubscriptionErrorEvent) {
 	}
 }
 
-// OnSubscribed implements centrifuge.SubscribedHandler and is triggered when the client has successfully subscribed
+// OnSubscribeSuccess implements centrifuge.SubscribeSuccessHandler and is triggered when the client has successfully subscribed
 // to the broker.
-func (c *Client) OnSubscribed(_ centrifuge.SubscribedEvent) {
+func (c *Client) OnSubscribeSuccess(_ *centrifuge.Subscription, _ centrifuge.SubscribeSuccessEvent) {
 	c.chanSubscribed <- struct{}{}
 }
 
@@ -112,9 +112,9 @@ func (c *Client) subscribe() error {
 		return subErr
 	}
 
-	c.sub.OnSubscribed(c.OnSubscribed)
-	c.sub.OnPublication(c.OnPublish)
-	c.sub.OnError(c.OnError)
+	c.sub.OnSubscribeSuccess(c)
+	c.sub.OnPublish(c)
+	c.sub.OnSubscribeError(c)
 
 	return c.sub.Subscribe()
 }
