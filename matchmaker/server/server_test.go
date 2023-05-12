@@ -42,13 +42,12 @@ func Test_StartStopQuery(t *testing.T) {
 	path := filepath.Join(dir, "server.json")
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"queryPort": "%s",
-		"serverLogDir": "1234/logs"
-	}`, strings.Split(queryEndpoint, ":")[1])), 0o600))
+		"serverLogDir": "%s"
+	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"))), 0o600))
 
 	s, err := New(
 		gsh.TypeAllocation,
 		gsh.WithConfigPath(path),
-		gsh.WithHomeDirectory(dir),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, s)
@@ -56,7 +55,7 @@ func Test_StartStopQuery(t *testing.T) {
 	require.NoError(t, s.Start())
 
 	// Make sure logging directory has been created
-	require.DirExists(t, filepath.Join(dir, "1234", "logs"))
+	require.DirExists(t, filepath.Join(dir, "logs"))
 
 	// Check query port is open on SQP (check that we receive an SQP challenge response)
 	conn, err := net.Dial("udp4", queryEndpoint)

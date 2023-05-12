@@ -20,7 +20,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 				"port": "9000",
 				"queryPort": "9010",
 				"serverID": "1234",
-				"serverLogDir": "1234/logs",
+				"serverLogDir": "/logs",
 				"a": "b"
 			}`,
 		),
@@ -28,7 +28,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 		),
 	)
 
-	cfg, err := newConfigFromFile(f, dir)
+	cfg, err := newConfigFromFile(f)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
 		AllocatedUUID: "a-uuid",
@@ -39,7 +39,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		ServerID:      "1234",
-		ServerLogDir:  filepath.Join(dir, "1234/logs"),
+		ServerLogDir:  "/logs",
 		Extra: map[string]string{
 			"a": "b",
 		},
@@ -59,14 +59,14 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 				"port": "9000",
 				"queryPort": "9010",
 				"serverID": "1234",
-				"serverLogDir": "1234/logs"
+				"serverLogDir": "/mnt/unity/logs/"
 			}`,
 		),
 			0o600,
 		),
 	)
 
-	cfg, err := newConfigFromFile(f, dir)
+	cfg, err := newConfigFromFile(f)
 	require.NoError(t, err)
 	require.Equal(t, &Config{
 		AllocatedUUID: "a-uuid",
@@ -77,7 +77,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		ServerID:      "1234",
-		ServerLogDir:  filepath.Join(dir, "1234/logs"),
+		ServerLogDir:  "/mnt/unity/logs/",
 		Extra:         map[string]string{},
 	}, cfg)
 }
