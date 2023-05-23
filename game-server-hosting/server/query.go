@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/a2s"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
@@ -90,6 +91,14 @@ func (s *Server) handleQuery() {
 		if err != nil {
 			if s.queryBind.IsDone() {
 				return
+			}
+
+			// Ignore timeouts, as reading from the buffer is configured to timeout after a small period of time.
+			var netErr net.Error
+			if errors.As(err, &netErr) {
+				if netErr.Timeout() {
+					continue
+				}
 			}
 
 			s.PushError(fmt.Errorf("query: error reading from socket: %w", err))
