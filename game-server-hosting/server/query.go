@@ -65,6 +65,7 @@ func (s *Server) restartQueryEndpoint(c Config) error {
 		fmt.Sprintf(":%s", c.QueryPort),
 		s.queryReadBufferSizeBytes,
 		s.queryWriteBufferSizeBytes,
+		s.queryReadDeadlineDuration,
 		s.queryWriteDeadlineDuration,
 	)
 

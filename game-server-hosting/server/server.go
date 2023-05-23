@@ -58,6 +58,7 @@ type (
 		queryWriteBufferSizeBytes  int
 		queryWriteDeadlineDuration time.Duration
 		queryReadBufferSizeBytes   int
+		queryReadDeadlineDuration  time.Duration
 
 		// Synchronisation
 		done chan struct{}
@@ -79,6 +80,9 @@ const (
 
 	// DefaultWriteDeadlineDuration represents the default write deadline duration for responding in the query handler.
 	DefaultWriteDeadlineDuration = 1 * time.Second
+
+	// DefaultReadDeadlineDuration represents the default read deadline duration for consuming a query request.
+	DefaultReadDeadlineDuration = 3 * time.Second
 
 	// DefaultReadBufferSizeBytes represents the default size of the read buffer for the query handler.
 	DefaultReadBufferSizeBytes = 1024
@@ -112,6 +116,7 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 		queryWriteBufferSizeBytes:   DefaultWriteBufferSizeBytes,
 		queryWriteDeadlineDuration:  DefaultWriteDeadlineDuration,
 		queryReadBufferSizeBytes:    DefaultReadBufferSizeBytes,
+		queryReadDeadlineDuration:   DefaultReadDeadlineDuration,
 	}
 
 	// Apply any specified options.

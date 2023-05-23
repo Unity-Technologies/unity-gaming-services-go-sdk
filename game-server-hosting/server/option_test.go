@@ -24,8 +24,15 @@ func Test_WithQueryReadBuffer(t *testing.T) {
 func Test_WithQueryWriteDeadlineDuration(t *testing.T) {
 	t.Parallel()
 	s := &Server{}
-	WithQueryWriteDeadlineDuration(1 * time.Second)(s)
-	require.Equal(t, 1*time.Second, s.queryWriteDeadlineDuration)
+	WithQueryWriteDeadlineDuration(2 * time.Second)(s)
+	require.Equal(t, 2*time.Second, s.queryWriteDeadlineDuration)
+}
+
+func Test_WithQueryReadDeadlineDuration(t *testing.T) {
+	t.Parallel()
+	s := &Server{}
+	WithQueryReadDeadlineDuration(1 * time.Second)(s)
+	require.Equal(t, 1*time.Second, s.queryReadDeadlineDuration)
 }
 
 func Test_WithConfigPath(t *testing.T) {

@@ -12,6 +12,7 @@ type (
 	udpBinding struct {
 		conn                  *net.UDPConn
 		done                  chan struct{}
+		readDeadlineDuration  time.Duration
 		writeDeadlineDuration time.Duration
 	}
 )
@@ -20,7 +21,7 @@ type (
 var errBindingClosed = errors.New("binding is closed")
 
 // newUDPBinding creates a new UDP binding on the specified address.
-func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeBytes int, writeDeadlineDuration time.Duration) (*udpBinding, error) {
+func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeBytes int, readDeadlineDuration time.Duration, writeDeadlineDuration time.Duration) (*udpBinding, error) {
 	address, err := net.ResolveUDPAddr("udp4", bindAddress)
 	if err != nil {
 		return nil, err
@@ -42,6 +43,7 @@ func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeB
 	return &udpBinding{
 		conn:                  conn,
 		done:                  make(chan struct{}),
+		readDeadlineDuration:  readDeadlineDuration,
 		writeDeadlineDuration: writeDeadlineDuration,
 	}, nil
 }
@@ -50,6 +52,10 @@ func newUDPBinding(bindAddress string, readBufferSizeBytes int, writeBufferSizeB
 func (b *udpBinding) Read(buf []byte) (int, *net.UDPAddr, error) {
 	if b.IsDone() {
 		return 0, nil, errBindingClosed
+	}
+
+	if err := b.conn.SetReadDeadline(time.Now().Add(b.readDeadlineDuration)); err != nil {
+		return 0, nil, fmt.Errorf("error setting read deadline: %w", err)
 	}
 
 	return b.conn.ReadFromUDP(buf)

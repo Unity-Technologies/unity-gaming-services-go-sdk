@@ -28,6 +28,13 @@ func WithQueryWriteDeadlineDuration(duration time.Duration) Option {
 	}
 }
 
+// WithQueryReadDeadlineDuration sets the read deadline duration for consuming query requests in the query handler.
+func WithQueryReadDeadlineDuration(duration time.Duration) Option {
+	return func(s *Server) {
+		s.queryReadDeadlineDuration = duration
+	}
+}
+
 // WithConfigPath sets the configuration file to use when starting the server. In most circumstances, the default
 // value is reasonable to use.
 func WithConfigPath(path string) Option {

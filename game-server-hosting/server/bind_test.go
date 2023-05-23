@@ -10,7 +10,7 @@ import (
 
 func Test_BindLifecycle(t *testing.T) {
 	t.Parallel()
-	b, err := newUDPBinding(":0", 128, 128, 1*time.Second)
+	b, err := newUDPBinding(":0", 128, 128, 1*time.Second, 1*time.Second)
 	require.NoError(t, err)
 	require.NotNil(t, b)
 	require.False(t, b.IsDone())
