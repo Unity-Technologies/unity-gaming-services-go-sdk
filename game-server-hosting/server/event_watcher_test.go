@@ -41,3 +41,18 @@ func Test_listenForEvents(t *testing.T) {
 	require.Equal(t, "alloc-id", <-s.OnDeallocate())
 	close(s.done)
 }
+
+func Test_listenForEvents_badServerID(t *testing.T) {
+	t.Parallel()
+
+	s, err := New(TypeAllocation)
+	require.NoError(t, err)
+
+	s.currentConfig = Config{
+		ServerID: "NaN",
+	}
+
+	go s.listenForEvents()
+	err = <-s.eventWatcherReady
+	require.ErrorContains(t, err, "error parsing server ID")
+}

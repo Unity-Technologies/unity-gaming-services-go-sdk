@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/internal/localproxy"
 )
 
@@ -10,7 +12,11 @@ func (s *Server) listenForEvents() {
 	s.wg.Add(1)
 
 	cfg := s.Config()
-	serverID, _ := cfg.ServerID.Int64()
+	serverID, err := cfg.ServerID.Int64()
+	if err != nil {
+		s.eventWatcherReady <- fmt.Errorf("error parsing server ID: %w", err)
+		return
+	}
 
 	localProxyClient, err := localproxy.New(
 		cfg.LocalProxyURL,
@@ -18,7 +24,7 @@ func (s *Server) listenForEvents() {
 		s.chanError,
 	)
 	if err != nil {
-		s.eventWatcherReady <- err
+		s.eventWatcherReady <- fmt.Errorf("error creating local proxy client: %w", err)
 		return
 	}
 
@@ -38,8 +44,8 @@ func (s *Server) listenForEvents() {
 
 	// Tear down the client on exit.
 	defer func() {
+		defer s.wg.Done()
 		_ = localProxyClient.Stop()
-		s.wg.Done()
 	}()
 
 	// Wait until server has finished.

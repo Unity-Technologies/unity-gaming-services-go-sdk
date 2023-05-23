@@ -49,7 +49,8 @@ func Test_StartStopQuery(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"queryPort": "%s",
 		"serverLogDir": "%s",
-		"localProxyUrl": "%s"
+		"localProxyUrl": "%s",
+		"serverID": "1"
 	}`, port, filepath.Join(dir, "logs"), svr.Host)), 0o600))
 
 	s, err := New(

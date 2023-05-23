@@ -52,9 +52,9 @@ func (c *Client) Start() error {
 
 // Stop stops the client.
 func (c *Client) Stop() error {
-	c.centrifugeClient.Close()
+	err := c.centrifugeClient.Close()
 	close(c.done)
-	return nil
+	return err
 }
 
 // RegisterCallback registers a callback function for the specified EventType.

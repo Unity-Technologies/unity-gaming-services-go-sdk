@@ -148,7 +148,8 @@ func Test_wrapWithConfigAndJWT(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"localProxyUrl": "%s",
 		"queryPort": "%s",
-		"serverLogDir": "%s"
+		"serverLogDir": "%s",
+		"serverID": "1"
 	}`, svr.Host, strings.Split(queryEndpoint, ":")[1], dir)), 0o600))
 
 	s, err := New(gsh.TypeAllocation, gsh.WithConfigPath(path))
