@@ -10,30 +10,9 @@ import (
 	"testing"
 
 	gsh "github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server"
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
 	"github.com/stretchr/testify/require"
 )
-
-func localProxyServer() (*httptest.Server, string) {
-	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjAwOWFkOGYzYWJhN2U4NjRkNTg5NTVmNzYwMWY1YTgzNDg2OWJjNTMiLCJ0eXAiOiJKV1QifQ." +
-		"eyJlbnZpcm9ubWVudF9pZCI6ImJiNjc5ZWMxLTM3ZmItNDZjNi1iMmZjLWNkNDk4NzJlMmMxYSIsImV4cCI6MTY3NDg1NDEzNiwiaWF0Ijox" +
-		"NjQzMzE4MTM2LCJwcm9qZWN0X2d1aWQiOiJlODBlMmZmMS0zZmFhLTRhOTQtOWUyZC1hMDIxMDdhZTJhODMifQ.FejrCFVs351JQmt_QYUGy" +
-		"pG6ECy8c2N2WDFu2a7Ww85MvUWXpdB6KRnRdryKIGTNqNrRhP1wHLQZDYtCGZGc36mBoJ3Kz_1yONp3MDmC92cHWP-9duoB5otrkD66TigtI" +
-		"cXruKdD65vBehFHod2gYvAwhnGa0GWJV4TLR927KiFC_O4mkxIAyTYued3rsFRgCXwlePY2kglOcpCaa8r_86hta4QYbZRmdfTu9ZNeW6K92" +
-		"t8cMoUF_01Re7Gq4gZ-UwEi9IQ9E1ltITyfkY6ksmoURGEZKNuicRrzSTAzUpv460YGCJOZSbbA7ua8DR4qcTgZKDpWUN1LEJoYkuovJcAgj" +
-		"_5svOgdAcPAnmwtkpQQsJx1SSwy9ODFgGozis8k3jxbj_nyd-7zve5KG7l6nNbpnQvG8DIJTIGAl-pQQ_lVvhBlcdeaUeiu4zx5DbijEgqiE" +
-		"XGeTEWZegCMDET_4kyEN-Bs8Bzu4wH_w7MPMQANWuQnB5P-Y4t_wKSLLgOUF5yEZnDm5cVOojnIbYCaGOC5IVj8o4ki2vuff92mAdKWOWIYV" +
-		"-9pg24XDlgss6csGw_8vVO-5p9fUHI4d0nRsIB_YeblNrVEcJeiVtVFA_yzx_v9K8AJyt_xZUhsJ3N85E9ftIP5NuHIL0sNxwl7m6dzHQ9Xw" +
-		"iQJ_pZU4QFzIJI"
-
-	// Example JWT token with invalid signature
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `{
-  			"token": "%s",
-  			"error": ""
-		}
-`, token)
-	})), token
-}
 
 func Test_approveBackfillTicket(t *testing.T) {
 	t.Parallel()
@@ -122,17 +101,18 @@ func Test_approveBackfillTicket_NonOKRequest(t *testing.T) {
 func Test_getJwtToken(t *testing.T) {
 	t.Parallel()
 
-	proxy, token := localProxyServer()
-	defer proxy.Close()
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
 
 	g, err := New(gsh.TypeAllocation)
 	require.NoError(t, err)
 
 	result, err := g.getJwtToken(&gsh.Config{
-		LocalProxyURL: proxy.URL,
+		LocalProxyURL: svr.Host,
 	})
 	require.NoError(t, err)
-	require.Equal(t, token, result)
+	require.Equal(t, svr.JWT, result)
 }
 
 func Test_getJwtToken_error(t *testing.T) {
@@ -156,8 +136,9 @@ func Test_getJwtToken_error(t *testing.T) {
 func Test_wrapWithConfigAndJWT(t *testing.T) {
 	t.Parallel()
 
-	proxy, _ := localProxyServer()
-	defer proxy.Close()
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
 
 	queryEndpoint, err := getRandomPortAssignment()
 	require.NoError(t, err)
@@ -168,7 +149,7 @@ func Test_wrapWithConfigAndJWT(t *testing.T) {
 		"localProxyUrl": "%s",
 		"queryPort": "%s",
 		"serverLogDir": "%s"
-	}`, proxy.URL, strings.Split(queryEndpoint, ":")[1], dir)), 0o600))
+	}`, svr.Host, strings.Split(queryEndpoint, ":")[1], dir)), 0o600))
 
 	s, err := New(gsh.TypeAllocation, gsh.WithConfigPath(path))
 	require.NoError(t, err)

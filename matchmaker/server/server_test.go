@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	gsh "github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server"
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,15 +36,21 @@ func getRandomPortAssignment() (string, error) {
 func Test_StartStopQuery(t *testing.T) {
 	t.Parallel()
 
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
+
 	queryEndpoint, err := getRandomPortAssignment()
 	require.NoError(t, err)
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "server.json")
+	port := strings.Split(queryEndpoint, ":")[1]
 	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
 		"queryPort": "%s",
-		"serverLogDir": "%s"
-	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"))), 0o600))
+		"serverLogDir": "%s",
+		"localProxyUrl": "%s"
+	}`, port, filepath.Join(dir, "logs"), svr.Host)), 0o600))
 
 	s, err := New(
 		gsh.TypeAllocation,

@@ -15,3 +15,19 @@ Component Name: stretchr/testify
 License Type: "MIT"
 
 [testify License](https://github.com/stretchr/testify/blob/master/LICENSE)
+
+---
+
+Component Name: centrifugal/centrifuge
+
+License Type: "MIT"
+
+[centrifuge License](https://github.com/centrifugal/centrifuge/blob/master/LICENSE)
+
+---
+
+Component Name: centrifugal/centrifuge-go
+
+License Type: "MIT"
+
+[centrifuge-go License](https://github.com/centrifugal/centrifuge-go/blob/master/LICENSE)

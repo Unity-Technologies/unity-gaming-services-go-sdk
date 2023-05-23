@@ -26,6 +26,9 @@ type (
 		// indicates that the internal event processor is ready.
 		internalEventProcessorReady chan struct{}
 
+		// eventWatcherReady is the channel that, when written to, indicates that the event watcher is ready.
+		eventWatcherReady chan error
+
 		// queryBind is a UDP endpoint which responds to game queries
 		queryBind *udpBinding
 
@@ -104,6 +107,7 @@ func New(serverType Type, opts ...Option) (*Server, error) {
 		chanError:                   make(chan error, 1),
 		chanConfigurationChanged:    make(chan Config, 1),
 		internalEventProcessorReady: make(chan struct{}, 1),
+		eventWatcherReady:           make(chan error, 1),
 		done:                        make(chan struct{}, 1),
 		queryWriteBufferSizeBytes:   DefaultWriteBufferSizeBytes,
 		queryWriteDeadlineDuration:  DefaultWriteDeadlineDuration,
@@ -148,10 +152,16 @@ func (s *Server) Start() error {
 	port, _ := c.Port.Int64()
 	s.state.Port = uint16(port)
 
-	go s.processInternalEvents()
+	go s.watchForConfigChanges()
+	go s.listenForEvents()
 
 	// Wait until the internal event processor is ready.
 	<-s.internalEventProcessorReady
+
+	// Wait until the event watcher is ready.
+	if err = <-s.eventWatcherReady; err != nil {
+		return fmt.Errorf("error configuring event watcher: %w", err)
+	}
 
 	// Handle the app starting with an allocation
 	if c.AllocatedUUID != "" {
