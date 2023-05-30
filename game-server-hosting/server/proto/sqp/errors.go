@@ -13,11 +13,8 @@ type (
 )
 
 var (
-	ErrChallengeMalformed  = errors.New("challenge malformed")
-	ErrChallengeMismatch   = errors.New("challenge mismatch")
-	ErrInvalidPacketLength = errors.New("invalid packet length")
-	ErrNoChallenge         = errors.New("no challenge")
-	ErrUnsupportedQuery    = errors.New("unsupported query")
+	errInvalidPacketLength = errors.New("invalid packet length")
+	errUnsupportedQuery    = errors.New("unsupported query")
 )
 
 // NewUnsupportedSQPVersionError returns a new instance of UnsupportedSQPVersionError.
