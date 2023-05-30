@@ -80,13 +80,17 @@ func (s *Server) restartQueryEndpoint(c Config) error {
 
 // handleQuery handles responding to query commands on an incoming UDP port.
 func (s *Server) handleQuery() {
-	size := 16
+	buf := make([]byte, 16)
 
 	s.wg.Add(1)
 	defer s.wg.Done()
 
 	for {
-		buf := make([]byte, size)
+		// Clear buffer before use
+		for i := range buf {
+			buf[i] = 0
+		}
+
 		_, to, err := s.queryBind.Read(buf)
 		if err != nil {
 			if s.queryBind.IsDone() {

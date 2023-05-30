@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"sync"
+	"time"
 
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 )
@@ -12,9 +13,11 @@ import (
 type (
 	// QueryResponder represents a responder capable of responding to SQP-formatted queries.
 	QueryResponder struct {
-		challenges sync.Map
-		enc        *encoder
-		state      *proto.QueryState
+		challenges               sync.Map
+		enc                      *encoder
+		state                    *proto.QueryState
+		challengesLastPurgedUTC  time.Time
+		challengesLastPurgedLock sync.RWMutex
 	}
 
 	// challengeWireFormat describes the format of an SQP challenge response.
@@ -34,14 +37,21 @@ type (
 		ServerInfoLength uint32
 		ServerInfo       sqpServerInfo
 	}
+
+	// challengeEntry represents an entry in the query responder challenges map.
+	challengeEntry struct {
+		value     uint32
+		expiryUTC time.Time
+	}
 )
 
 // NewQueryResponder returns creates a new responder capable of responding
 // to SQP-formatted queries.
 func NewQueryResponder(state *proto.QueryState) (*QueryResponder, error) {
 	q := &QueryResponder{
-		enc:   &encoder{},
-		state: state,
+		enc:                     &encoder{},
+		state:                   state,
+		challengesLastPurgedUTC: time.Now().UTC(),
 	}
 
 	return q, nil
@@ -72,13 +82,29 @@ func isQuery(buf []byte) bool {
 
 // handleChallenge handles an incoming challenge packet.
 func (q *QueryResponder) handleChallenge(clientAddress string) ([]byte, error) {
+	// Purge entries asynchronously if we haven't done so in a while.
+	// Do this at the beginning so that any upcoming failures don't stop us from cleaning up.
+	q.challengesLastPurgedLock.RLock()
+	if time.Since(q.challengesLastPurgedUTC).Minutes() > 0 {
+		q.challengesLastPurgedLock.RUnlock()
+		q.challengesLastPurgedLock.Lock()
+		q.challengesLastPurgedUTC = time.Now().UTC()
+		q.challengesLastPurgedLock.Unlock()
+		q.challengesLastPurgedLock.RLock()
+		go q.purgeStaleChallenges(time.Now().UTC())
+	}
+	q.challengesLastPurgedLock.RUnlock()
+
 	randBytes := make([]byte, 4)
 	if _, err := rand.Read(randBytes); err != nil {
 		return nil, err
 	}
 
 	v := binary.BigEndian.Uint32(randBytes)
-	q.challenges.Store(clientAddress, v)
+	q.challenges.Store(clientAddress, challengeEntry{
+		value:     v,
+		expiryUTC: time.Now().UTC().Add(1 * time.Minute),
+	})
 
 	resp := bytes.NewBuffer(nil)
 	err := proto.WireWrite(
@@ -108,12 +134,12 @@ func (q *QueryResponder) handleQuery(clientAddress string, buf []byte) ([]byte, 
 	}
 
 	// Challenge doesn't match, return with no response
-	expectedChallengeInt, ok := expectedChallenge.(uint32)
+	expectedChallengeEntry, ok := expectedChallenge.(challengeEntry)
 	if !ok {
 		return nil, ErrChallengeMalformed
 	}
 
-	if binary.BigEndian.Uint32(buf[1:5]) != expectedChallengeInt {
+	if binary.BigEndian.Uint32(buf[1:5]) != expectedChallengeEntry.value {
 		return nil, ErrChallengeMismatch
 	}
 
@@ -125,7 +151,7 @@ func (q *QueryResponder) handleQuery(clientAddress string, buf []byte) ([]byte, 
 	wantsServerInfo := requestedChunks&0x1 == 1
 	f := queryWireFormat{
 		Header:     1,
-		Challenge:  expectedChallengeInt,
+		Challenge:  expectedChallengeEntry.value,
 		SQPVersion: 1,
 	}
 
@@ -142,4 +168,17 @@ func (q *QueryResponder) handleQuery(clientAddress string, buf []byte) ([]byte, 
 	}
 
 	return resp.Bytes(), nil
+}
+
+// purgeStaleChallenges purges any entries which have an expiry in the past.
+func (q *QueryResponder) purgeStaleChallenges(epochUTC time.Time) {
+	q.challenges.Range(func(k any, v any) bool {
+		if entry, ok := v.(challengeEntry); ok {
+			if epochUTC.After(entry.expiryUTC) {
+				q.challenges.Delete(k)
+			}
+		}
+
+		return true
+	})
 }
