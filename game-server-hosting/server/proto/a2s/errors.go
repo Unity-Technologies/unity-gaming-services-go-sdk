@@ -1,6 +1,9 @@
 package a2s
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type (
 	// UnsupportedQueryError is an error which represents an invalid SQP query header.
@@ -8,6 +11,9 @@ type (
 		header []byte
 	}
 )
+
+// errNotAnInfoRequest defines an error in which the input is not an A2S_INFO request.
+var errNotAnInfoRequest = errors.New("not an info request")
 
 // NewUnsupportedQueryError returns a new instance of UnsupportedQueryError.
 func NewUnsupportedQueryError(header []byte) error {
