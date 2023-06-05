@@ -6,6 +6,7 @@ require (
 	github.com/centrifugal/centrifuge v0.21.1
 	github.com/centrifugal/centrifuge-go v0.8.4
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.2
 )
 
@@ -19,7 +20,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/igm/sockjs-go/v3 v3.0.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

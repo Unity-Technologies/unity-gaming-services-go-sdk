@@ -54,7 +54,7 @@ func (c *Client) ReserveSelf(ctx context.Context, args *model.ReserveRequest) (*
 	if resp.StatusCode != http.StatusOK {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			return nil, NewUnexpectedResponseWithError(requestID.String(), resp.StatusCode, err)
+			return nil, NewUnexpectedResponseWithError(requestID.String(), resp.StatusCode, readErr)
 		}
 		return nil, NewUnexpectedResponseWithBody(requestID.String(), resp.StatusCode, body)
 	}

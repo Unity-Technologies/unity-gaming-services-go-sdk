@@ -47,7 +47,7 @@ func (c *Client) UnreserveSelf(ctx context.Context) error {
 	if resp.StatusCode != http.StatusNoContent {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			return NewUnexpectedResponseWithError(requestID.String(), resp.StatusCode, err)
+			return NewUnexpectedResponseWithError(requestID.String(), resp.StatusCode, readErr)
 		}
 		return NewUnexpectedResponseWithBody(requestID.String(), resp.StatusCode, body)
 	}
