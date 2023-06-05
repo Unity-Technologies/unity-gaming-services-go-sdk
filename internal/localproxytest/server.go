@@ -2,11 +2,15 @@ package localproxytest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/model"
 	"github.com/centrifugal/centrifuge"
+	"github.com/google/uuid"
 )
 
 // MockLocalProxy represents a mock implementation of the Game Server Hosting machine-local proxy.
@@ -22,6 +26,9 @@ type MockLocalProxy struct {
 
 	// JWT is the mock token this instance of the mock uses.
 	JWT string
+
+	// ReserveResponse is the reservation request response this mock uses.
+	ReserveResponse *model.ReserveResponse
 }
 
 // NewLocalProxy sets up a new websocket server with centrifuge which accepts all connections and subscriptions.
@@ -59,6 +66,16 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 		return nil, err
 	}
 
+	var ip string
+	reserveResponse := &model.ReserveResponse{
+		BuildConfigurationID: 1234,
+		Created:              time.Now().UTC(),
+		Fulfilled:            time.Now().UTC(),
+		GamePort:             9000,
+		Ipv4:                 &ip,
+		Requested:            time.Now().UTC(),
+		ReservationID:        uuid.New().String(),
+	}
 	ws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		// Satisfy the request for a connection to a centrifuge broker.
@@ -71,14 +88,29 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 				"token": "%s",
 				"error": ""
 			}`, token)
+
+		// Satisfy the request to reserve or unreserve a server.
+		case "/v1/servers/1/reservations":
+			switch r.Method {
+			case http.MethodPost:
+				_ = json.NewEncoder(w).Encode(reserveResponse)
+
+			case http.MethodDelete:
+				w.WriteHeader(http.StatusNoContent)
+
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
 		}
 	}))
+	ip = ws.URL
 
 	return &MockLocalProxy{
-		Server: ws,
-		Node:   node,
-		Host:   ws.URL,
-		JWT:    token,
+		Server:          ws,
+		Node:            node,
+		Host:            ws.URL,
+		JWT:             token,
+		ReserveResponse: reserveResponse,
 	}, nil
 }
 

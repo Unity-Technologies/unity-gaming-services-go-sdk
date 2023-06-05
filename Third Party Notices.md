@@ -31,3 +31,11 @@ Component Name: centrifugal/centrifuge-go
 License Type: "MIT"
 
 [centrifuge-go License](https://github.com/centrifugal/centrifuge-go/blob/master/LICENSE)
+
+---
+
+Component Name: google/uuid
+
+License Type: "BSD 3-clause"
+
+[uuid License](https://github.com/google/uuid/blob/master/LICENSE)

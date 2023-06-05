@@ -12,6 +12,7 @@ import (
 type Client struct {
 	centrifugeClient *centrifuge.Client
 	sub              *centrifuge.Subscription
+	host             string
 	serverID         int64
 	callbacks        map[EventType]func(Event)
 	done             chan struct{}
@@ -27,6 +28,7 @@ func New(host string, serverID int64, chanError chan<- error) (*Client, error) {
 			fmt.Sprintf("ws://%s/v1/connection/websocket", hostWithoutProtocol),
 			centrifuge.DefaultConfig(),
 		),
+		host:           host,
 		serverID:       serverID,
 		callbacks:      map[EventType]func(Event){},
 		done:           make(chan struct{}),

@@ -18,7 +18,7 @@ func (s *Server) listenForEvents() {
 		return
 	}
 
-	localProxyClient, err := localproxy.New(
+	s.localProxyClient, err = localproxy.New(
 		cfg.LocalProxyURL,
 		serverID,
 		s.chanError,
@@ -30,11 +30,11 @@ func (s *Server) listenForEvents() {
 
 	// Watch for allocate and deallocate events if the server handles allocations.
 	if s.serverType == TypeAllocation {
-		localProxyClient.RegisterCallback(localproxy.AllocateEventType, s.watchAllocation)
-		localProxyClient.RegisterCallback(localproxy.DeallocateEventType, s.watchDeallocation)
+		s.localProxyClient.RegisterCallback(localproxy.AllocateEventType, s.watchAllocation)
+		s.localProxyClient.RegisterCallback(localproxy.DeallocateEventType, s.watchDeallocation)
 	}
 
-	if err = localProxyClient.Start(); err != nil {
+	if err = s.localProxyClient.Start(); err != nil {
 		s.eventWatcherReady <- err
 		return
 	}
@@ -45,7 +45,7 @@ func (s *Server) listenForEvents() {
 	// Tear down the client on exit.
 	defer func() {
 		defer s.wg.Done()
-		_ = localProxyClient.Stop()
+		_ = s.localProxyClient.Stop()
 	}()
 
 	// Wait until server has finished.
