@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/internal/localproxy"
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/model"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 )
 
@@ -60,6 +63,9 @@ type (
 		queryReadBufferSizeBytes   int
 		queryReadDeadlineDuration  time.Duration
 
+		// Local proxy
+		localProxyClient *localproxy.Client
+
 		// Synchronisation
 		done chan struct{}
 		wg   sync.WaitGroup
@@ -88,16 +94,19 @@ const (
 	DefaultReadBufferSizeBytes = 1024
 )
 
-// ErrReservationsNotYetSupported represents that a reservation-based server is not yet supported by the SDK.
-var ErrReservationsNotYetSupported = errors.New("reservations are not yet supported")
+var (
+	// ErrOperationNotApplicable represents that the operation being performed is not applicable to the server type.
+	ErrOperationNotApplicable = errors.New("the operation requested is not applicable to the server type")
+
+	// ErrNilContext represents that the context supplied is nil.
+	ErrNilContext = errors.New("context is nil")
+
+	// ErrNilArgs represents that the arguments supplied are nil.
+	ErrNilArgs = errors.New("arguments supplied are nil")
+)
 
 // New creates a new instance of Server, denoting which type of server to use.
 func New(serverType Type, opts ...Option) (*Server, error) {
-	// Reservations are not supported just yet, but provided to make the API stable.
-	if serverType == TypeReservation {
-		return nil, ErrReservationsNotYetSupported
-	}
-
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("error getting user home directory: %w", err)
@@ -228,6 +237,38 @@ func (s *Server) OnError() <-chan error {
 // configuration file.
 func (s *Server) OnConfigurationChanged() <-chan Config {
 	return s.chanConfigurationChanged
+}
+
+// Reserve reserves this server for use. Only applicable to reservation-based fleets.
+func (s *Server) Reserve(ctx context.Context, args *model.ReserveRequest) (*model.ReserveResponse, error) {
+	// Operation is only applicable to reservation-based fleets, so return an error otherwise.
+	if s.serverType != TypeReservation {
+		return nil, ErrOperationNotApplicable
+	}
+
+	if ctx == nil {
+		return nil, ErrNilContext
+	}
+
+	if args == nil {
+		return nil, ErrNilArgs
+	}
+
+	return s.localProxyClient.ReserveSelf(ctx, args)
+}
+
+// Unreserve unreserves this server, making it available for use. Only applicable to reservation-based fleets.
+func (s *Server) Unreserve(ctx context.Context) error {
+	// Operation is only applicable to reservation-based fleets, so return an error otherwise.
+	if s.serverType != TypeReservation {
+		return ErrOperationNotApplicable
+	}
+
+	if ctx == nil {
+		return ErrNilContext
+	}
+
+	return s.localProxyClient.UnreserveSelf(ctx)
 }
 
 // PlayerJoined indicates a new player has joined the server.

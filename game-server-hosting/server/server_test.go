@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/model"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
 	"github.com/stretchr/testify/require"
@@ -187,14 +189,6 @@ func Test_DataSettings(t *testing.T) {
 	}, s.state)
 }
 
-func Test_New_noReservations(t *testing.T) {
-	t.Parallel()
-
-	s, err := New(TypeReservation)
-	require.Nil(t, s)
-	require.ErrorIs(t, err, ErrReservationsNotYetSupported)
-}
-
 func Test_New_appliesOptions(t *testing.T) {
 	t.Parallel()
 
@@ -228,4 +222,62 @@ func Test_New_Allocations(t *testing.T) {
 	require.Equal(t, DefaultWriteBufferSizeBytes, s.queryWriteBufferSizeBytes)
 	require.Equal(t, DefaultReadBufferSizeBytes, s.queryReadBufferSizeBytes)
 	require.Equal(t, DefaultWriteDeadlineDuration, s.queryWriteDeadlineDuration)
+}
+
+func Test_Reserve_Unreserve(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err)
+
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
+
+	path := filepath.Join(dir, "server.json")
+	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
+		"queryPort": "%s",
+		"serverID": "1",
+		"serverLogDir": "%s",
+		"localProxyUrl": "%s",
+		"queryType": "sqp"
+	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"), svr.Host)), 0o600))
+
+	s, err := New(
+		TypeReservation,
+		WithConfigPath(path),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, s)
+
+	require.NoError(t, s.Start())
+
+	resp, err := s.Reserve(context.Background(), &model.ReserveRequest{})
+	require.Nil(t, err)
+	require.Equal(t, svr.ReserveResponse, resp)
+	require.NoError(t, s.Unreserve(context.Background()))
+
+	require.NoError(t, s.Stop())
+}
+
+func Test_Reserve_Unreserve_ErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	allocationServer, err := New(TypeAllocation)
+	require.NoError(t, err)
+	reservationServer, err := New(TypeReservation)
+	require.NoError(t, err)
+
+	_, err = allocationServer.Reserve(context.Background(), &model.ReserveRequest{})
+	require.ErrorIs(t, err, ErrOperationNotApplicable)
+	err = allocationServer.Unreserve(context.Background())
+	require.ErrorIs(t, err, ErrOperationNotApplicable)
+
+	_, err = reservationServer.Reserve(nil, &model.ReserveRequest{}) //nolint: staticcheck
+	require.ErrorIs(t, err, ErrNilContext)
+	_, err = reservationServer.Reserve(context.Background(), nil)
+	require.ErrorIs(t, err, ErrNilArgs)
+	err = reservationServer.Unreserve(nil) //nolint: staticcheck
+	require.ErrorIs(t, err, ErrNilContext)
 }
