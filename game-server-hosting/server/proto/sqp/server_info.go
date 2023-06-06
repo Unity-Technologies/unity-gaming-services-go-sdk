@@ -7,6 +7,7 @@ import (
 )
 
 type (
+	// sqpServerInfo holds the server info chunk data.
 	sqpServerInfo struct {
 		CurrentPlayers uint16
 		MaxPlayers     uint16
@@ -19,16 +20,16 @@ type (
 )
 
 // queryStateToServerInfo converts proto.QueryState to sqpServerInfo.
-func queryStateToServerInfo(qs *proto.QueryState) sqpServerInfo {
+func queryStateToServerInfo(qs *proto.QueryState) *sqpServerInfo {
 	if qs == nil {
-		return sqpServerInfo{
+		return &sqpServerInfo{
 			ServerName: "n/a",
 			GameType:   "n/a",
 			GameMap:    "n/a",
 		}
 	}
 
-	return sqpServerInfo{
+	return &sqpServerInfo{
 		CurrentPlayers: uint16(atomic.LoadInt32(&qs.CurrentPlayers)),
 		MaxPlayers:     uint16(qs.MaxPlayers),
 		ServerName:     qs.ServerName,

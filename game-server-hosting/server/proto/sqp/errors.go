@@ -8,7 +8,7 @@ import (
 type (
 	// UnsupportedSQPVersionError is an error which represents an invalid SQP version provided to the reader.
 	UnsupportedSQPVersionError struct {
-		version int8
+		version uint16
 	}
 )
 
@@ -18,7 +18,7 @@ var (
 )
 
 // NewUnsupportedSQPVersionError returns a new instance of UnsupportedSQPVersionError.
-func NewUnsupportedSQPVersionError(version int8) error {
+func NewUnsupportedSQPVersionError(version uint16) error {
 	return &UnsupportedSQPVersionError{
 		version: version,
 	}

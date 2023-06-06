@@ -35,8 +35,7 @@ func (c *Client) UnreserveSelf(ctx context.Context) error {
 	req.Header.Add("X-Request-ID", requestID.String())
 
 	var resp *http.Response
-	httpClient := &http.Client{}
-	if resp, err = httpClient.Do(req); err != nil {
+	if resp, err = c.httpClient.Do(req); err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}
 
