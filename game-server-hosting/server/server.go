@@ -189,18 +189,6 @@ func (s *Server) Start() error {
 		return fmt.Errorf("error configuring event watcher: %w", err)
 	}
 
-	// Handle the app starting with an allocation
-	if c.AllocatedUUID != "" {
-		// Configuration has changed - propagate to consumer. This is optional, so make sure we don't deadlock if
-		// nobody is listening.
-		select {
-		case s.chanConfigurationChanged <- *c:
-		default:
-		}
-
-		s.chanAllocated <- c.AllocatedUUID
-	}
-
 	return nil
 }
 
