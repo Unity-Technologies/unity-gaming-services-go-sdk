@@ -2,6 +2,7 @@ package localproxy
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ type Client struct {
 	centrifugeClient *centrifuge.Client
 	sub              *centrifuge.Subscription
 	host             string
+	httpClient       *http.Client
 	serverID         int64
 	callbacks        map[EventType]func(Event)
 	done             chan struct{}
@@ -29,6 +31,7 @@ func New(host string, serverID int64, chanError chan<- error) (*Client, error) {
 			centrifuge.DefaultConfig(),
 		),
 		host:           host,
+		httpClient:     &http.Client{},
 		serverID:       serverID,
 		callbacks:      map[EventType]func(Event){},
 		done:           make(chan struct{}),

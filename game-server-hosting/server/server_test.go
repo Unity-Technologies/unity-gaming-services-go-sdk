@@ -14,6 +14,7 @@ import (
 
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/model"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
 	"github.com/stretchr/testify/require"
 )
@@ -162,12 +163,12 @@ func Test_PlayerJoinedAndLeft(t *testing.T) {
 
 	i = s.PlayerLeft()
 	require.Equal(t, int32(0), i)
-	require.Equal(t, int32(0), i)
+	require.Equal(t, int32(0), s.state.CurrentPlayers)
 
 	// Make sure we do not underflow.
 	i = s.PlayerLeft()
 	require.Equal(t, int32(0), i)
-	require.Equal(t, int32(0), i)
+	require.Equal(t, int32(0), s.state.CurrentPlayers)
 }
 
 func Test_DataSettings(t *testing.T) {
@@ -280,4 +281,66 @@ func Test_Reserve_Unreserve_ErrorPaths(t *testing.T) {
 	require.ErrorIs(t, err, ErrNilArgs)
 	err = reservationServer.Unreserve(nil) //nolint: staticcheck
 	require.ErrorIs(t, err, ErrNilContext)
+}
+
+func Test_SetMetric(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err)
+
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
+
+	path := filepath.Join(dir, "server.json")
+	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
+		"queryPort": "%s",
+		"serverID": "1234",
+		"serverLogDir": "%s",
+		"localProxyUrl": "%s",
+		"queryType": "sqp"
+	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"), svr.Host)), 0o600))
+
+	s, err := New(
+		TypeAllocation,
+		WithConfigPath(path),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, s)
+
+	require.NoError(t, s.Start())
+
+	// Add metric to the first index.
+	require.NoError(t, s.SetMetric(0, 1.234))
+	s.stateLock.Lock()
+	require.Equal(t, []float32{1.234}, s.state.Metrics)
+	s.stateLock.Unlock()
+
+	// Add metric to the last index - make sure all indices in between are set to the default values.
+	require.NoError(t, s.SetMetric(sqp.MaxMetrics-1, 5.678))
+	s.stateLock.Lock()
+	require.Equal(t, []float32{1.234, 0, 0, 0, 0, 0, 0, 0, 0, 5.678}, s.state.Metrics)
+	s.stateLock.Unlock()
+
+	// Add a metric somewhere in the middle.
+	require.NoError(t, s.SetMetric(4, 9.012))
+	s.stateLock.Lock()
+	require.Equal(t, []float32{1.234, 0, 0, 0, 9.012, 0, 0, 0, 0, 5.678}, s.state.Metrics)
+	s.stateLock.Unlock()
+
+	// Attempt to add metric out of bounds - an error should be returned and no change observed to the underlying buffer.
+	require.ErrorIs(t, s.SetMetric(sqp.MaxMetrics, 0.123), ErrMetricOutOfBounds)
+	s.stateLock.Lock()
+	require.Equal(t, []float32{1.234, 0, 0, 0, 9.012, 0, 0, 0, 0, 5.678}, s.state.Metrics)
+	s.stateLock.Unlock()
+
+	// Attempt to set metrics on A2S - this should fail as this is currently unsupported.
+	s.currentConfigMtx.Lock()
+	s.currentConfig.QueryType = QueryProtocolA2S
+	s.currentConfigMtx.Unlock()
+	require.ErrorIs(t, s.SetMetric(0, 1.234), ErrMetricsUnsupported)
+
+	require.NoError(t, s.Stop())
 }

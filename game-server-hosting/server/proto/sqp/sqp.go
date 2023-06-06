@@ -22,14 +22,16 @@ type (
 
 	// queryWireFormat describes the format of an SQP query response.
 	queryWireFormat struct {
-		Header           byte
-		Challenge        uint32
-		SQPVersion       uint16
-		CurrentPacketNum byte
-		LastPacketNum    byte
-		PayloadLength    uint16
-		ServerInfoLength uint32
-		ServerInfo       sqpServerInfo
+		Header            byte
+		Challenge         uint32
+		SQPVersion        uint16
+		CurrentPacketNum  byte
+		LastPacketNum     byte
+		PayloadLength     uint16
+		ServerInfoLength  *uint32
+		ServerInfo        *sqpServerInfo
+		MetricsInfoLength *uint32
+		MetricsInfo       *sqpMetricsInfo
 	}
 )
 
@@ -103,12 +105,14 @@ func (q *QueryResponder) handleQuery(clientAddress string, buf []byte) ([]byte, 
 		return nil, err
 	}
 
-	if binary.BigEndian.Uint16(buf[5:7]) != 1 {
-		return nil, NewUnsupportedSQPVersionError(int8(buf[6]))
+	protocolVersion := binary.BigEndian.Uint16(buf[5:7])
+	if protocolVersion > 2 {
+		return nil, NewUnsupportedSQPVersionError(protocolVersion)
 	}
 
 	requestedChunks := buf[7]
 	wantsServerInfo := requestedChunks&0x1 == 1
+	wantsMetrics := requestedChunks&0x10 == 16
 	f := queryWireFormat{
 		Header:     1,
 		Challenge:  challenge,
@@ -119,8 +123,19 @@ func (q *QueryResponder) handleQuery(clientAddress string, buf []byte) ([]byte, 
 
 	if wantsServerInfo {
 		f.ServerInfo = queryStateToServerInfo(q.State)
-		f.ServerInfoLength = f.ServerInfo.Size()
-		f.PayloadLength += uint16(f.ServerInfoLength) + 4
+		size := f.ServerInfo.Size()
+		f.ServerInfoLength = &size
+		f.PayloadLength += uint16(*f.ServerInfoLength) + 4
+	}
+
+	// Metrics supported in SQPv2.
+	if protocolVersion >= 2 {
+		if wantsMetrics {
+			f.MetricsInfo = queryStateToMetrics(q.State)
+			size := f.MetricsInfo.Size()
+			f.MetricsInfoLength = &size
+			f.PayloadLength += uint16(*f.MetricsInfoLength) + 4
+		}
 	}
 
 	if err := proto.WireWrite(resp, q.enc, f); err != nil {

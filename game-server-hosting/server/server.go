@@ -14,6 +14,7 @@ import (
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/internal/localproxy"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/model"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
+	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 )
 
 type (
@@ -103,6 +104,12 @@ var (
 
 	// ErrNilArgs represents that the arguments supplied are nil.
 	ErrNilArgs = errors.New("arguments supplied are nil")
+
+	// ErrMetricsUnsupported represents that the query type this server is using does not support additional metrics.
+	ErrMetricsUnsupported = errors.New("metrics are not supported for this query type")
+
+	// ErrMetricOutOfBounds represents that the metric index provided will overflow the metrics buffer.
+	ErrMetricOutOfBounds = errors.New("metrics index provided will overflow the metrics buffer")
 )
 
 // New creates a new instance of Server, denoting which type of server to use.
@@ -158,6 +165,11 @@ func (s *Server) Start() error {
 	// to keep friction to a minimum.
 	s.SetServerName(fmt.Sprintf("go-sdk-server - %s", c.ServerID))
 	s.SetGameMap("go-sdk-map")
+
+	// Set up metrics buffer, if supported.
+	if c.QueryType == QueryProtocolSQP {
+		s.state.Metrics = make([]float32, 0, sqp.MaxMetrics)
+	}
 
 	if err = s.switchQueryProtocol(*c); err != nil {
 		return err
@@ -323,6 +335,30 @@ func (s *Server) Config() Config {
 	s.currentConfigMtx.Lock()
 	defer s.currentConfigMtx.Unlock()
 	return s.currentConfig
+}
+
+// SetMetric sets the metric at index to provided value. Only supported if the query type is QueryProtocolSQP, otherwise,
+// ErrMetricsUnsupported is returned. The maximum index is specified by sqp.MaxMetrics, any index supplied above this
+// will return ErrMetricOutOfBounds.
+func (s *Server) SetMetric(index byte, value float32) error {
+	if s.Config().QueryType != QueryProtocolSQP {
+		return ErrMetricsUnsupported
+	}
+
+	s.stateLock.Lock()
+	defer s.stateLock.Unlock()
+
+	if index >= sqp.MaxMetrics {
+		return ErrMetricOutOfBounds
+	}
+
+	// Expand slice to fit new index if needed.
+	if int(index) >= len(s.state.Metrics) {
+		s.state.Metrics = s.state.Metrics[:index+1]
+	}
+
+	s.state.Metrics[index] = value
+	return nil
 }
 
 // setConfig sets the configuration the server is currently using.
