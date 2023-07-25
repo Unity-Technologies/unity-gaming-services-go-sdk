@@ -271,6 +271,31 @@ func (s *Server) Unreserve(ctx context.Context) error {
 	return s.localProxyClient.UnreserveSelf(ctx)
 }
 
+// Hold holds this server, preventing descaling until after a reservation completes, the expiry time elapses,
+// or the hold is manually released with the Release() method.
+func (s *Server) Hold(ctx context.Context, args *model.HoldRequest) (*model.HoldStatus, error) {
+	if ctx == nil {
+		return nil, ErrNilContext
+	}
+	return s.localProxyClient.HoldSelf(ctx, args)
+}
+
+// HoldStatus gets the status of the hold for the server, including the time at which the hold expires.
+func (s *Server) HoldStatus(ctx context.Context) (*model.HoldStatus, error) {
+	if ctx == nil {
+		return nil, ErrNilContext
+	}
+	return s.localProxyClient.HoldStatus(ctx)
+}
+
+// Release manually releases any existing holds for this server.
+func (s *Server) Release(ctx context.Context) error {
+	if ctx == nil {
+		return ErrNilContext
+	}
+	return s.localProxyClient.ReleaseSelf(ctx)
+}
+
 // PlayerJoined indicates a new player has joined the server.
 func (s *Server) PlayerJoined() int32 {
 	s.stateLock.Lock()

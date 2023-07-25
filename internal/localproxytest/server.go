@@ -29,6 +29,9 @@ type MockLocalProxy struct {
 
 	// ReserveResponse is the reservation request response this mock uses.
 	ReserveResponse *model.ReserveResponse
+
+	// HoldStatus is the status of a server hold, the response this mock uses.
+	HoldStatus *model.HoldStatus
 }
 
 // NewLocalProxy sets up a new websocket server with centrifuge which accepts all connections and subscriptions.
@@ -76,6 +79,12 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 		Requested:            time.Now().UTC(),
 		ReservationID:        uuid.New().String(),
 	}
+
+	holdStatus := &model.HoldStatus{
+		ExpiresAt: time.Now().Add(10 * time.Minute).UTC().Unix(),
+		Held:      true,
+	}
+
 	ws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		// Satisfy the request for a connection to a centrifuge broker.
@@ -101,6 +110,20 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 			default:
 				w.WriteHeader(http.StatusMethodNotAllowed)
 			}
+		case "/v1/servers/1/hold":
+			switch r.Method {
+			case http.MethodGet:
+				_ = json.NewEncoder(w).Encode(holdStatus)
+
+			case http.MethodPost:
+				_ = json.NewEncoder(w).Encode(holdStatus)
+
+			case http.MethodDelete:
+				w.WriteHeader(http.StatusNoContent)
+
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
 		}
 	}))
 	ip = ws.URL
@@ -111,6 +134,7 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 		Host:            ws.URL,
 		JWT:             token,
 		ReserveResponse: reserveResponse,
+		HoldStatus:      holdStatus,
 	}, nil
 }
 

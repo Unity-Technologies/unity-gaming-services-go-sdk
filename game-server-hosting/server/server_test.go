@@ -262,6 +262,47 @@ func Test_Reserve_Unreserve(t *testing.T) {
 	require.NoError(t, s.Stop())
 }
 
+func Test_Hold_Release(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err)
+
+	svr, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err)
+	defer svr.Close()
+
+	path := filepath.Join(dir, "server.json")
+	require.NoError(t, os.WriteFile(path, []byte(fmt.Sprintf(`{
+		"queryPort": "%s",
+		"serverID": "1",
+		"serverLogDir": "%s",
+		"localProxyUrl": "%s",
+		"queryType": "sqp"
+	}`, strings.Split(queryEndpoint, ":")[1], filepath.Join(dir, "logs"), svr.Host)), 0o600))
+
+	s, err := New(
+		TypeReservation,
+		WithConfigPath(path),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, s)
+
+	require.NoError(t, s.Start())
+
+	resp, err := s.Hold(context.Background(), &model.HoldRequest{})
+	require.NoError(t, err)
+	require.Equal(t, svr.HoldStatus, resp)
+
+	resp, err = s.HoldStatus(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, svr.HoldStatus, resp)
+
+	require.NoError(t, s.Release(context.Background()))
+	require.NoError(t, s.Stop())
+}
+
 func Test_Reserve_Unreserve_ErrorPaths(t *testing.T) {
 	t.Parallel()
 
@@ -280,6 +321,20 @@ func Test_Reserve_Unreserve_ErrorPaths(t *testing.T) {
 	_, err = reservationServer.Reserve(context.Background(), nil)
 	require.ErrorIs(t, err, ErrNilArgs)
 	err = reservationServer.Unreserve(nil) //nolint: staticcheck
+	require.ErrorIs(t, err, ErrNilContext)
+}
+
+func Test_Hold_Release_ErrorPaths(t *testing.T) {
+	reservationServer, err := New(TypeReservation)
+	require.NoError(t, err)
+
+	_, err = reservationServer.Hold(nil, &model.HoldRequest{}) //nolint: staticcheck
+	require.ErrorIs(t, err, ErrNilContext)
+
+	_, err = reservationServer.HoldStatus(nil) //nolint: staticcheck
+	require.ErrorIs(t, err, ErrNilContext)
+
+	err = reservationServer.Release(nil) //nolint: staticcheck
 	require.ErrorIs(t, err, ErrNilContext)
 }
 

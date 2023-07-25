@@ -40,3 +40,4 @@ linters:
     - structcheck
     - nosnakecase
     - lll
+    - dupl
