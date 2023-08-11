@@ -22,6 +22,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 				"port": "9000",
 				"queryPort": "9010",
 				"regionID": "efgh",
+				"regionName": "North America",
 				"serverID": "1234",
 				"serverLogDir": "/logs",
 				"a": "b"
@@ -44,6 +45,7 @@ func Test_NewConfigFromFile_defaults(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		RegionID:      "efgh",
+		RegionName:    "North America",
 		ServerID:      "1234",
 		ServerLogDir:  "/logs",
 		Extra: map[string]string{
@@ -67,6 +69,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 				"port": "9000",
 				"queryPort": "9010",
 				"regionID": "efgh",
+				"regionName": "North America",
 				"serverID": "1234",
 				"serverLogDir": "/mnt/unity/logs/"
 			}`,
@@ -88,6 +91,7 @@ func Test_NewConfigFromFile_supported_values(t *testing.T) {
 		QueryPort:     "9010",
 		QueryType:     QueryProtocolSQP,
 		RegionID:      "efgh",
+		RegionName:    "North America",
 		ServerID:      "1234",
 		ServerLogDir:  "/mnt/unity/logs/",
 		Extra:         map[string]string{},

@@ -41,6 +41,9 @@ type (
 		// RegionID is the ID of the region this server is a member of.
 		RegionID string `json:"regionID"`
 
+		// RegionName is the name of the region this server is a member of.
+		RegionName string `json:"regionName"`
+
 		// ServerID is the ID of the running server in the Unity Game Server Hosting platform.
 		ServerID json.Number `json:"serverID"`
 
