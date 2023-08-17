@@ -13,7 +13,7 @@ type (
 		// AllocatedUUID is the allocation ID provided to an event.
 		AllocatedUUID string `json:"allocatedUUID"`
 
-		// FleetID is the ID of the fleet this server is a member of.
+		// FleetID is the ID of the fleet of which the server is a member.
 		FleetID string `json:"fleetID"`
 
 		// IP is the IPv4 address of this server.
@@ -25,7 +25,7 @@ type (
 		// LocalProxyURL is the URL to the local proxy service, which can handle interactions with the allocations payload store.
 		LocalProxyURL string `json:"localProxyUrl"`
 
-		// MachineID is the ID of the machine which this server is running on.
+		// MachineID is the ID of the machine on which the server is running.
 		MachineID json.Number `json:"machineID"`
 
 		// Port is the port number this server uses for game interactions. It is up to the implemented to bind their game
@@ -38,10 +38,10 @@ type (
 		// QueryType represents the query protocol used by this server.
 		QueryType QueryProtocol `json:"queryType"`
 
-		// RegionID is the ID of the region this server is a member of.
+		// RegionID is the ID of the region of which the server is a member.
 		RegionID string `json:"regionID"`
 
-		// RegionName is the name of the region this server is a member of.
+		// RegionName is the name of the region of which the server is a member.
 		RegionName string `json:"regionName"`
 
 		// ServerID is the ID of the running server in the Unity Game Server Hosting platform.
