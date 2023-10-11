@@ -171,6 +171,19 @@ func Test_PlayerJoinedAndLeft(t *testing.T) {
 	require.Equal(t, int32(0), s.state.CurrentPlayers)
 }
 
+func Test_SetCurrentPlayers(t *testing.T) {
+	t.Parallel()
+
+	s, err := New(TypeAllocation)
+	require.NoError(t, err)
+
+	s.SetCurrentPlayers(10)
+	require.Equal(t, int32(10), s.state.CurrentPlayers)
+
+	s.SetCurrentPlayers(-1)
+	require.Equal(t, int32(0), s.state.CurrentPlayers)
+}
+
 func Test_DataSettings(t *testing.T) {
 	t.Parallel()
 
