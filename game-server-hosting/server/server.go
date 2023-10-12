@@ -314,6 +314,19 @@ func (s *Server) PlayerLeft() int32 {
 	return s.state.CurrentPlayers
 }
 
+// SetCurrentPlayers sets the number of players currently in the game. Can be used as an alternative to PlayerJoined
+// and PlayerLeft.
+func (s *Server) SetCurrentPlayers(players int32) {
+	s.stateLock.Lock()
+	defer s.stateLock.Unlock()
+
+	if players < 0 {
+		players = 0
+	}
+
+	s.state.CurrentPlayers = players
+}
+
 // SetMaxPlayers sets the maximum players this server will host. It does not enforce this number,
 // it only serves for query / metrics.
 func (s *Server) SetMaxPlayers(max int32) {
