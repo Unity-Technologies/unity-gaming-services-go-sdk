@@ -296,6 +296,20 @@ func (s *Server) Release(ctx context.Context) error {
 	return s.localProxyClient.ReleaseSelf(ctx)
 }
 
+// ReadyForPlayers indicates the server is ready for players to join.
+func (s *Server) ReadyForPlayers(ctx context.Context) error {
+	if ctx == nil {
+		return ErrNilContext
+	}
+
+	allocationID := s.currentConfig.AllocatedUUID
+	patch := &model.PatchAllocationRequest{
+		Ready: true,
+	}
+
+	return s.localProxyClient.PatchAllocation(ctx, allocationID, patch)
+}
+
 // PlayerJoined indicates a new player has joined the server.
 func (s *Server) PlayerJoined() int32 {
 	s.stateLock.Lock()

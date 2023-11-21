@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -411,4 +414,45 @@ func Test_SetMetric(t *testing.T) {
 	require.ErrorIs(t, s.SetMetric(0, 1.234), ErrMetricsUnsupported)
 
 	require.NoError(t, s.Stop())
+}
+
+func Test_ReadyForPlayers(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err, "getting random port")
+
+	proxy, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err, "creating local proxy")
+	defer proxy.Close()
+
+	port := strings.Split(queryEndpoint, ":")[1]
+
+	config := Config{
+		AllocatedUUID: "00000001-0000-0000-0000-000000000000",
+		LocalProxyURL: proxy.Host,
+		QueryPort:     json.Number(port),
+		QueryType:     QueryProtocolSQP,
+		ServerID:      "1",
+		ServerLogDir:  filepath.Join(dir, "logs"),
+	}
+
+	data, err := json.Marshal(config)
+	require.NoError(t, err, "marshalling config")
+
+	configPath := filepath.Join(dir, "server.json")
+	require.NoError(t, os.WriteFile(configPath, data, 0o600), "writing config file")
+
+	s, err := New(TypeAllocation, WithConfigPath(configPath))
+	require.NoError(t, err, "making test server")
+	require.NotNil(t, s, "nil test server")
+
+	require.NoError(t, s.Start(), "starting test server")
+
+	require.NoError(t, s.ReadyForPlayers(ctx), "ready for players")
+	require.NotNil(t, proxy.PatchAllocationRequest, "nil patch allocation request")
+	require.Equal(t, true, proxy.PatchAllocationRequest.Ready, "unexpected ready value")
 }

@@ -32,6 +32,10 @@ type MockLocalProxy struct {
 
 	// HoldStatus is the status of a server hold, the response this mock uses.
 	HoldStatus *model.HoldStatus
+
+	// PatchAllocationRequest is the last request made to patch an allocation.
+	// This is used to verify the request body.
+	PatchAllocationRequest *model.PatchAllocationRequest
 }
 
 // NewLocalProxy sets up a new websocket server with centrifuge which accepts all connections and subscriptions.
@@ -124,8 +128,18 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 			default:
 				w.WriteHeader(http.StatusMethodNotAllowed)
 			}
+
+		case "/v1/servers/1/allocations/00000001-0000-0000-0000-000000000000":
+			switch r.Method {
+			case http.MethodPatch:
+				w.WriteHeader(http.StatusNoContent)
+
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
 		}
 	}))
+
 	ip = ws.URL
 
 	return &MockLocalProxy{
