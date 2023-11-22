@@ -33,9 +33,9 @@ type MockLocalProxy struct {
 	// HoldStatus is the status of a server hold, the response this mock uses.
 	HoldStatus *model.HoldStatus
 
-	// PatchAllocationRequest is the last request made to patch an allocation.
-	// This is used to verify the request body.
-	PatchAllocationRequest *model.PatchAllocationRequest
+	// PatchAllocationRequests is a map of the last requests made to patch each
+	// allocation. This is used to verify the request body.
+	PatchAllocationRequests map[string]*model.PatchAllocationRequest
 }
 
 // NewLocalProxy sets up a new websocket server with centrifuge which accepts all connections and subscriptions.
@@ -89,6 +89,8 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 		Held:      true,
 	}
 
+	patchAllocationRequests := make(map[string]*model.PatchAllocationRequest)
+
 	ws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		// Satisfy the request for a connection to a centrifuge broker.
@@ -132,6 +134,9 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 		case "/v1/servers/1/allocations/00000001-0000-0000-0000-000000000000":
 			switch r.Method {
 			case http.MethodPatch:
+				req := &model.PatchAllocationRequest{}
+				_ = json.NewDecoder(r.Body).Decode(req)
+				patchAllocationRequests["00000001-0000-0000-0000-000000000000"] = req
 				w.WriteHeader(http.StatusNoContent)
 
 			default:
@@ -143,12 +148,13 @@ func NewLocalProxy() (*MockLocalProxy, error) {
 	ip = ws.URL
 
 	return &MockLocalProxy{
-		Server:          ws,
-		Node:            node,
-		Host:            ws.URL,
-		JWT:             token,
-		ReserveResponse: reserveResponse,
-		HoldStatus:      holdStatus,
+		Server:                  ws,
+		Node:                    node,
+		Host:                    ws.URL,
+		JWT:                     token,
+		ReserveResponse:         reserveResponse,
+		HoldStatus:              holdStatus,
+		PatchAllocationRequests: patchAllocationRequests,
 	}, nil
 }
 

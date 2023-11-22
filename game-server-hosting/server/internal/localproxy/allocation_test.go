@@ -29,6 +29,7 @@ func Test_PatchAllocation(t *testing.T) {
 	alloc := "00000001-0000-0000-0000-000000000000"
 
 	require.NoError(t, c.PatchAllocation(ctx, alloc, args), "patching allocation")
-	require.NotNil(t, proxy.PatchAllocationRequest, "nil patch allocation request")
-	require.Equal(t, true, proxy.PatchAllocationRequest.Ready, "unexpected ready value")
+	require.Contains(t, proxy.PatchAllocationRequests, alloc, "missing patch allocation request")
+	require.NotNil(t, proxy.PatchAllocationRequests[alloc], "nil patch allocation request")
+	require.Equal(t, true, proxy.PatchAllocationRequests[alloc].Ready, "unexpected ready value")
 }

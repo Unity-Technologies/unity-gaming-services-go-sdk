@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -427,19 +426,17 @@ func Test_ReadyForPlayers(t *testing.T) {
 	require.NoError(t, err, "creating local proxy")
 	defer proxy.Close()
 
+	alloc := "00000001-0000-0000-0000-000000000000"
 	port := strings.Split(queryEndpoint, ":")[1]
 
-	config := Config{
-		AllocatedUUID: "00000001-0000-0000-0000-000000000000",
-		LocalProxyURL: proxy.Host,
-		QueryPort:     json.Number(port),
-		QueryType:     QueryProtocolSQP,
-		ServerID:      "1",
-		ServerLogDir:  filepath.Join(dir, "logs"),
-	}
-
-	data, err := json.Marshal(config)
-	require.NoError(t, err, "marshalling config")
+	data := []byte(fmt.Sprintf(`{
+		"allocatedUUID": "%s",
+		"localProxyUrl": "%s",
+		"queryPort": "%s",
+		"queryType": "sqp",
+		"serverID": "1",
+		"serverLogDir": "%s"
+	}`, alloc, proxy.Host, port, filepath.Join(dir, "logs")))
 
 	configPath := filepath.Join(dir, "server.json")
 	require.NoError(t, os.WriteFile(configPath, data, 0o600), "writing config file")
@@ -451,6 +448,7 @@ func Test_ReadyForPlayers(t *testing.T) {
 	require.NoError(t, s.Start(), "starting test server")
 
 	require.NoError(t, s.ReadyForPlayers(ctx), "ready for players")
-	require.NotNil(t, proxy.PatchAllocationRequest, "nil patch allocation request")
-	require.Equal(t, true, proxy.PatchAllocationRequest.Ready, "unexpected ready value")
+	require.Contains(t, proxy.PatchAllocationRequests, alloc, "missing patch allocation request")
+	require.NotNil(t, proxy.PatchAllocationRequests[alloc], "nil patch allocation request")
+	require.Equal(t, true, proxy.PatchAllocationRequests[alloc].Ready, "unexpected ready value")
 }
