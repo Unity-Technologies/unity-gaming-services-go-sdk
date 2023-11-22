@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/game-server-hosting/server/proto/sqp"
 	"github.com/Unity-Technologies/unity-gaming-services-go-sdk/internal/localproxytest"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
