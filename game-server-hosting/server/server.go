@@ -110,6 +110,9 @@ var (
 
 	// ErrMetricOutOfBounds represents that the metric index provided will overflow the metrics buffer.
 	ErrMetricOutOfBounds = errors.New("metrics index provided will overflow the metrics buffer")
+
+	/// ErrNotAllocated represents that the server is not allocated.
+	ErrNotAllocated = errors.New("server is not allocated")
 )
 
 // New creates a new instance of Server, denoting which type of server to use.
@@ -303,6 +306,10 @@ func (s *Server) ReadyForPlayers(ctx context.Context) error {
 	}
 
 	allocationID := s.currentConfig.AllocatedUUID
+	if allocationID == "" {
+		return ErrNotAllocated
+	}
+
 	patch := &model.PatchAllocationRequest{
 		Ready: true,
 	}
