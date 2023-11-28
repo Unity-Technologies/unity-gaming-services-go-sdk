@@ -412,3 +412,43 @@ func Test_SetMetric(t *testing.T) {
 
 	require.NoError(t, s.Stop())
 }
+
+func Test_ReadyForPlayers(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	queryEndpoint, err := getRandomPortAssignment()
+	require.NoError(t, err, "getting random port")
+
+	proxy, err := localproxytest.NewLocalProxy()
+	require.NoError(t, err, "creating local proxy")
+	defer proxy.Close()
+
+	alloc := "00000001-0000-0000-0000-000000000000"
+	port := strings.Split(queryEndpoint, ":")[1]
+
+	data := []byte(fmt.Sprintf(`{
+		"allocatedUUID": "%s",
+		"localProxyUrl": "%s",
+		"queryPort": "%s",
+		"queryType": "sqp",
+		"serverID": "1",
+		"serverLogDir": "%s"
+	}`, alloc, proxy.Host, port, filepath.Join(dir, "logs")))
+
+	configPath := filepath.Join(dir, "server.json")
+	require.NoError(t, os.WriteFile(configPath, data, 0o600), "writing config file")
+
+	s, err := New(TypeAllocation, WithConfigPath(configPath))
+	require.NoError(t, err, "making test server")
+	require.NotNil(t, s, "nil test server")
+
+	require.NoError(t, s.Start(), "starting test server")
+
+	require.NoError(t, s.ReadyForPlayers(ctx), "ready for players")
+	require.Contains(t, proxy.PatchAllocationRequests, alloc, "missing patch allocation request")
+	require.NotNil(t, proxy.PatchAllocationRequests[alloc], "nil patch allocation request")
+	require.Equal(t, true, proxy.PatchAllocationRequests[alloc].Ready, "unexpected ready value")
+}
