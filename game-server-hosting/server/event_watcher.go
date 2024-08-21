@@ -69,7 +69,7 @@ func (s *Server) watchAllocation(ev localproxy.Event) {
 func (s *Server) watchDeallocation(ev localproxy.Event) {
 	if de, ok := ev.(*localproxy.DeallocateEvent); ok {
 		s.allocatedUUIDMtx.Lock()
-		s.allocatedUUID = de.AllocationID
+		s.allocatedUUID = ""
 		s.allocatedUUIDMtx.Unlock()
 
 		s.chanDeallocated <- de.AllocationID
