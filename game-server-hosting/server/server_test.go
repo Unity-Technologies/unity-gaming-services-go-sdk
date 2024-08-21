@@ -430,13 +430,13 @@ func Test_ReadyForPlayers(t *testing.T) {
 	port := strings.Split(queryEndpoint, ":")[1]
 
 	data := []byte(fmt.Sprintf(`{
-		"allocatedUUID": "%s",
+		"allocatedUUID": "",
 		"localProxyUrl": "%s",
 		"queryPort": "%s",
 		"queryType": "sqp",
 		"serverID": "1",
 		"serverLogDir": "%s"
-	}`, alloc, proxy.Host, port, filepath.Join(dir, "logs")))
+	}`, proxy.Host, port, filepath.Join(dir, "logs")))
 
 	configPath := filepath.Join(dir, "server.json")
 	require.NoError(t, os.WriteFile(configPath, data, 0o600), "writing config file")
@@ -444,6 +444,10 @@ func Test_ReadyForPlayers(t *testing.T) {
 	s, err := New(TypeAllocation, WithConfigPath(configPath))
 	require.NoError(t, err, "making test server")
 	require.NotNil(t, s, "nil test server")
+
+	s.allocatedUUIDMtx.Lock()
+	s.allocatedUUID = alloc
+	s.allocatedUUIDMtx.Unlock()
 
 	require.NoError(t, s.Start(), "starting test server")
 

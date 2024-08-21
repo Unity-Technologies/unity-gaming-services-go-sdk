@@ -23,6 +23,10 @@ type (
 
 	// Server represents an instance of a game server, handling changes to configuration and responding to query requests.
 	Server struct {
+		// AllocatedUUID is the allocation ID provided to an event.
+		allocatedUUID    string
+		allocatedUUIDMtx sync.RWMutex
+
 		// cfgFile is the file path this game uses to read its configuration from
 		cfgFile string
 
@@ -305,7 +309,10 @@ func (s *Server) ReadyForPlayers(ctx context.Context) error {
 		return ErrNilContext
 	}
 
-	allocationID := s.currentConfig.AllocatedUUID
+	s.allocatedUUIDMtx.RLock()
+	allocationID := s.allocatedUUID
+	s.allocatedUUIDMtx.RUnlock()
+
 	if allocationID == "" {
 		return ErrNotAllocated
 	}
