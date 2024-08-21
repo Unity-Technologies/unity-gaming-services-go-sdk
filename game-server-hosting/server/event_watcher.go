@@ -56,6 +56,10 @@ func (s *Server) listenForEvents() {
 // channel when signalled.
 func (s *Server) watchAllocation(ev localproxy.Event) {
 	if ae, ok := ev.(*localproxy.AllocateEvent); ok {
+		s.allocatedUUIDMtx.Lock()
+		s.allocatedUUID = ae.AllocationID
+		s.allocatedUUIDMtx.Unlock()
+
 		s.chanAllocated <- ae.AllocationID
 	}
 }
@@ -64,6 +68,10 @@ func (s *Server) watchAllocation(ev localproxy.Event) {
 // channel when signalled.
 func (s *Server) watchDeallocation(ev localproxy.Event) {
 	if de, ok := ev.(*localproxy.DeallocateEvent); ok {
+		s.allocatedUUIDMtx.Lock()
+		s.allocatedUUID = de.AllocationID
+		s.allocatedUUIDMtx.Unlock()
+
 		s.chanDeallocated <- de.AllocationID
 	}
 }
