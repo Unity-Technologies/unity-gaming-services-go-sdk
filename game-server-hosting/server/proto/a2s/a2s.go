@@ -106,6 +106,7 @@ func (q *QueryResponder) handleInfoRequest(clientAddress string, buf []byte) ([]
 			GameMap:     "n/a",
 			GameFolder:  "n/a",
 			GameName:    "n/a",
+			ServerType:  'd', // d = dedicated server, which is the only supported option currently
 			Environment: environmentFromRuntime(runtime.GOOS),
 		}
 
