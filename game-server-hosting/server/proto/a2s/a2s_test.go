@@ -64,6 +64,7 @@ func Test_Respond(t *testing.T) {
 				{environmentFromRuntime(runtime.GOOS)},
 				{0},
 				{0},
+				{0},
 			},
 			nil,
 		),
