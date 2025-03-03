@@ -38,6 +38,7 @@ type (
 		Environment byte
 		Visibility  byte
 		VACEnabled  byte
+		Version     string
 	}
 
 	// infoRequest represents the request format for an A2S_INFO query.
